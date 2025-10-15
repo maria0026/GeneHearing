@@ -72,6 +72,11 @@ class TonalAudiometry():
             self.mini_dfs[i] = mini_df
         print(f'Merging rows completed.')
 
+    def combine_sym(self, row):
+        if row['SYMETRIA_1_DEF'] == 'brak obl' or row['SYMETRIA_2_DEF'] == 'brak obl':
+            return 'brak obl'
+        else:
+            return row['SYMETRIA_1_DEF'] & row['SYMETRIA_2_DEF']
 
     def define_symmetry(self, first_symmetry_columns, second_symmetry_columns):
         def1_cols_diff = [col + '_diff' for col in first_symmetry_columns]
@@ -109,9 +114,11 @@ class TonalAudiometry():
 
                         mini_df.loc[:, 'SYMETRIA_2_DEF'] = int(sym)
 
-                #mini_df.loc[:, 'SYMETRIA'] = mini_df.loc[:, 'SYMETRIA_1_def'] & mini_df.loc[:, 'SYMETRIA_2_def']
+                    mini_df['SYMETRIA'] = mini_df.apply(self.combine_sym, axis=1)
                 else:
                     mini_df.loc[:, 'SYMETRIA'] = "brak obl"
+
+
 
     def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, hf_columns):
         numeric_cols = PTA2_columns + PTA4_columns + hf_columns
@@ -144,7 +151,6 @@ class TonalAudiometry():
             os.makedirs(output_path)
         merged_df.to_csv(f'{output_path}audiometry_{self.tonal_suffix}.csv', index=False)
         print(f'Saving to {output_path}audiometry_{self.tonal_suffix}.csv completed.')
-
 
 
 
