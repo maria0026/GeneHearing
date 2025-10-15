@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genehearing"
+version = "0.1.0"
+description = "Analiza danych MRI i słuchowych"
+authors = [
+    { name = "Maria Waligórska", email = "m.waligorska@student.uw.edu.pl"}
+]
+readme = "README.md"
+dependencies = [
+    "pandas >= 2.3.0",
+    "scikit-learn",
+    "statsmodels",
+    "tqdm",
+    "numpy"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["genehearing*"]
+exclude = ["data*", "notebooks*"]
