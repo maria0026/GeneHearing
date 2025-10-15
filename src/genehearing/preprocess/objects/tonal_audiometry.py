@@ -72,52 +72,49 @@ class TonalAudiometry():
             self.mini_dfs[i] = mini_df
         print(f'Merging rows completed.')
 
+    def compute_diff(self, mini_df, columns, suffix='_diff'):
+        diff = mini_df[columns].diff().iloc[1:]  # bierzemy tylko drugi wiersz
+        diff.columns = [col + suffix for col in columns]
+        return diff
+
+    def check_symmetry_def1(self, diff_df, threshold=20):
+        if diff_df.empty:
+            return "brak_obl"
+        sym = True 
+        for index in range(diff_df.shape[1]-1): 
+            if ((diff_df.iloc[0, index]>threshold) & (diff_df.iloc[0, index+1]>threshold)): 
+                sym = False
+        return int(sym)
+
+    def check_symmetry_def2(self, diff_df, threshold=15):
+        if diff_df.empty:
+            return "brak_obl"
+        sym = True
+        if (diff_df.iloc[0]>15).sum() > 1:
+            sym = False
+        return int(sym)
+
     def combine_sym(self, row):
-        if row['SYMETRIA_1_DEF'] == 'brak obl' or row['SYMETRIA_2_DEF'] == 'brak obl':
-            return 'brak obl'
+        if row['SYMETRIA_1_DEF'] == 'brak_obl' or row['SYMETRIA_2_DEF'] == 'brak_obl':
+            return 'brak_obl'
         else:
             return row['SYMETRIA_1_DEF'] & row['SYMETRIA_2_DEF']
 
     def define_symmetry(self, first_symmetry_columns, second_symmetry_columns):
-        def1_cols_diff = [col + '_diff' for col in first_symmetry_columns]
-        def2_cols_diff = [col + '_diff' for col in second_symmetry_columns]
-
         for i, mini_df in enumerate(self.mini_dfs):
             #only for air audiometry
             if mini_df.loc[0, self.type_col] in self.air_audiometry:
-                if mini_df.shape[0] == 2:
-                    #print(mini_df['TYP_AUDIOMETRII'], mini_df['ID_PACJENTA'], mini_df['date_year_month_day'])
-                    diff_def1 = pd.DataFrame(mini_df[first_symmetry_columns].diff().values, columns = def1_cols_diff)
-                    diff_def2 = pd.DataFrame(mini_df[second_symmetry_columns].diff().values, columns = def2_cols_diff)
+                if mini_df.shape[0] != 2:
+                    mini_df.loc[:, 'SYMETRIA'] = "brak _obl"
+                    continue
 
-                    diff_def1 = diff_def1.dropna()
-                    diff_def2 = diff_def2.dropna()
+                diff_def1 = self.compute_diff(mini_df, first_symmetry_columns)
+                diff_def2 = self.compute_diff(mini_df, second_symmetry_columns)
 
-                    if diff_def1.shape[0] != 1:
-                        mini_df.loc[:, 'SYMETRIA_1_DEF'] = "brak obl"
-                    else:
-                        sym = True
-                        for index in range(diff_def1.shape[1]-1):
-                            if ((diff_def1.iloc[0, index]>20) & (diff_def1.iloc[0, index+1]>20)):
-                                sym = False
+                mini_df['SYMETRIA_1_DEF'] = self.check_symmetry_def1(diff_def1)
+                mini_df['SYMETRIA_2_DEF'] = self.check_symmetry_def2(diff_def2)
 
-                        mini_df.loc[:, 'SYMETRIA_1_DEF'] = int(sym)
-
-                
-                    if diff_def2.shape[0] != 1:
-                        mini_df.loc[:, 'SYMETRIA_2_DEF'] = "brak obl"
-                    else:
-                        sym = True
-                        for index in range(diff_def1.shape[1]-1):
-                            if (diff_def2.iloc[0]>15).sum() >1:
-                                sym = False
-
-                        mini_df.loc[:, 'SYMETRIA_2_DEF'] = int(sym)
-
-                    mini_df['SYMETRIA'] = mini_df.apply(self.combine_sym, axis=1)
-                else:
-                    mini_df.loc[:, 'SYMETRIA'] = "brak obl"
-
+                mini_df['SYMETRIA'] = mini_df.apply(self.combine_sym, axis=1)
 
 
     def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, hf_columns):
