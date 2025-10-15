@@ -1,0 +1,80 @@
+# DATA 
+datarawdirectory: data/raw/
+datainterimdirectory: data/interim/
+dataprocesseddirectory: data/processed/
+dataname: export_all_tables
+mri_dataname: mri
+mapping: anon_mapping
+resultsdirectory: results/
+
+patients_sheetname: "Pacjenci"
+
+# Names of Excel sheets containing audiometry data
+audiometry_names:
+  - "Audiometria_Tonalna"
+  - "Audiometria_Slowna"
+  - "Audiometria_Pole_Swobodne"
+
+# Mapping of sheet names to short keys used in the code
+audiometry_map:
+  Audiometria_Tonalna: "tonal"
+  Audiometria_Slowna: "verbal"
+  Audiometria_Pole_Swobodne: "free_field"
+
+# Columns to be dropped when reading audiometry data
+audiometry_dropcolumns:
+  - "WYNIKI_POZOSTALE"
+  - "WYKONUJACY_BADANIE"
+  - "OPIS_BADANIA"
+  - "id"
+
+# Columns used for matching patient data; these will not be renamed
+match_columns:
+  - "NUMER_HISTORII_CHOROBY"
+  - "NUMER_W_JEDNOSTCE"
+  - "NUMER_HISTORII_CHOROBY"
+
+tonaldataname: audiometry_tonal
+verbaldataname: audiometry_verbal
+freefielddataname: audiometry_free_field
+
+date_column: "DATA_BADANIA"
+description_column: "OPIS_BADANIA"
+audiometry_name_columnname: "NAZWA_AUDIOMETRII"
+audiometry_earside_columnname: "UWAGI_DO_AUDIOMETRII"
+audiometry_type_columnname: "TYP_AUDIOMETRII"
+pesel_columnname: "NUMER_HISTORII_CHOROBY"
+
+mask_merging_columns:
+  - "NUMER_HISTORII_CHOROBY"
+  - "UWAGI_DO_AUDIOMETRII"
+
+bone_audiometry: ["BoneMask", "Bone"]
+air_audiometry: ["AirMask", "Air"]
+
+pta_columns:
+  PTA2:
+    - WYNIK_X_500
+    - WYNIK_X_1000
+    - WYNIK_X_2000
+  PTA4:
+    - WYNIK_X_500
+    - WYNIK_X_1000
+    - WYNIK_X_2000
+    - WYNIK_X_4000
+  hfPTA:
+    - WYNIK_X_4000
+    - WYNIK_X_8000
+
+first_symmetry_columns:
+  - WYNIK_X_500
+  - WYNIK_X_1000
+  - WYNIK_X_2000
+  - WYNIK_X_4000
+  - WYNIK_X_8000
+
+second_symmetry_columns:
+  - WYNIK_X_2000
+  - WYNIK_X_4000
+  - WYNIK_X_8000
+
