@@ -82,7 +82,7 @@ class TonalAudiometry():
             return "brak_obl"
         sym = True 
         for index in range(diff_df.shape[1]-1): 
-            if ((diff_df.iloc[0, index]>threshold) & (diff_df.iloc[0, index+1]>threshold)): 
+            if ((diff_df.iloc[0, index]>threshold or diff_df.iloc[0, index]<-threshold) & (diff_df.iloc[0, index+1]>threshold or diff_df.iloc[0, index]<-threshold)): 
                 sym = False
         return int(sym)
 
@@ -90,7 +90,7 @@ class TonalAudiometry():
         if diff_df.empty:
             return "brak_obl"
         sym = True
-        if (diff_df.iloc[0]>15).sum() > 1:
+        if (diff_df.iloc[0]>threshold).sum() + (diff_df.iloc[0]<-threshold).sum() > 1:
             sym = False
         return int(sym)
 
