@@ -21,6 +21,7 @@ class TonalAudiometry():
         self.earside_col = columnnames['audiometry_earside_columnname']
         self.date_column = columnnames['date_column']
         self.type_col = columnnames['type_column']
+
         self.tonal_suffix = tonal_suffix
         self.air_audiometry = air_audiometry
         self.bone_audiometry = bone_audiometry
@@ -41,35 +42,59 @@ class TonalAudiometry():
             self.data[self.date_column].dt.month.astype(str) + "-" +
             self.data[self.date_column].dt.day.astype(str)
         )
+        self.group_columns = [self.pesel_columnname] + ['date_year_month_day'] #+ [self.type_col]
 
-        self.group_columns = [self.pesel_columnname] + ['date_year_month_day'] + [self.type_col]
-
-        #mini_df for each patient and each ear
+        #mini_df for each patient and each examination
         self.mini_dfs = []
         for _, group in self.data.groupby(self.group_columns):
             self.mini_dfs.append(group.reset_index(drop=True))
 
         print(f'Created {len(self.mini_dfs)} dataframes for each patient and each examination')
 
+    def assign_group(self,typ):
+        if typ in self.air_audiometry:
+            return "air"
+        elif typ in self.bone_audiometry:
+            return "bone"   
+
+
+    def merge_ear(self, group, ear):
+        group = group[group['ear_side']== ear]
+        if group.shape[0] > 1:
+            row_first_left = group[group['ear_side'] == ear].iloc[0]
+            row_second_left = group[group['ear_side'] == ear].iloc[1]
+            merged_row = row_first_left.combine_first(row_second_left)
+            #print(merged_row)
+            #update values with merged from masking and not masking
+            idx_first = group[group['ear_side'] == ear].index[0]
+            idx_second = group[group['ear_side'] == ear].index[1]
+            group.loc[idx_first] = merged_row
+            #delete second row
+            mini_df = group.loc[~group.index.isin([idx_second])]
+            return mini_df
+        else:
+            return group
 
     def merge_mask(self):
-        pairs = self.air_audiometry + self.bone_audiometry
-
+        ears = ['L', 'P']
         for i, mini_df in enumerate(self.mini_dfs):
-            types = set(mini_df[self.type_col])
-            for pair in pairs:
-                if set(pair) <= types:
-                    row_first = mini_df[mini_df[self.type_col] == pair[0]].iloc[0]
-                    row_second = mini_df[mini_df[self.type_col] == pair[1]].iloc[0]
-                    merged_row = row_first.combine_first(row_second)
-
-                    #update values with merged from masking and not masking
-                    idx_first = mini_df[mini_df[self.type_col] == pair[0]].index[0]
-                    mini_df.loc[idx_first] = merged_row
-                    #delete second row
-                    mini_df = mini_df[mini_df[self.type_col] != pair[1]]
-
-            self.mini_dfs[i] = mini_df
+            mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            all_groups_df = pd.DataFrame()
+            for key in grouped:
+                ear_dfs = pd.DataFrame()
+                group = grouped[key]
+                group['ear_side'] = group[self.earside_col].str.extract(r"(lewego|prawego)")
+                group['ear_side'] = group['ear_side'].map({"lewego": "L", "prawego": "P"})
+                for ear in ears:
+                    ear_df = self.merge_ear(group, ear)
+                    #print(ear_df)
+                    ear_dfs = pd.concat([ear_dfs, ear_df], axis=0)
+                #print(ear_dfs)
+                all_groups_df = pd.concat([all_groups_df, ear_dfs], axis=0)
+                #print(all_groups_df)
+            self.mini_dfs[i] = all_groups_df
+            #print(self.mini_dfs[i])
         print(f'Merging rows completed.')
 
     def compute_diff(self, mini_df, columns, suffix='_diff'):
@@ -78,44 +103,65 @@ class TonalAudiometry():
         return diff
 
     def check_symmetry_def1(self, diff_df, threshold=20):
-        if diff_df.empty:
+        diff_df = diff_df.dropna(axis=1, how='all')
+        if diff_df.shape[1] < 2:
             return "brak_obl"
         sym = True 
         for index in range(diff_df.shape[1]-1): 
-            if ((diff_df.iloc[0, index]>threshold or diff_df.iloc[0, index]<-threshold) & (diff_df.iloc[0, index+1]>threshold or diff_df.iloc[0, index]<-threshold)): 
+            if ((diff_df.iloc[0, index]>=threshold or diff_df.iloc[0, index]<=-threshold) & (diff_df.iloc[0, index+1]>=threshold or diff_df.iloc[0, index+1]<=-threshold)): 
                 sym = False
+            
         return int(sym)
 
     def check_symmetry_def2(self, diff_df, threshold=15):
-        if diff_df.empty:
+        diff_df = diff_df.dropna(axis=1, how='all')
+        if diff_df.shape[1] < 2:
             return "brak_obl"
         sym = True
-        if (diff_df.iloc[0]>threshold).sum() + (diff_df.iloc[0]<-threshold).sum() > 1:
+        if (diff_df.iloc[0]>=threshold).sum() + (diff_df.iloc[0]<=-threshold).sum() > 1:
             sym = False
         return int(sym)
 
     def combine_sym(self, row):
-        if row['SYMETRIA_1_DEF'] == 'brak_obl' or row['SYMETRIA_2_DEF'] == 'brak_obl':
+        if row['SYMETRIA_1_DEF'] == 'brak_obl' and row['SYMETRIA_2_DEF'] == 'brak_obl':
             return 'brak_obl'
+        if row['SYMETRIA_1_DEF'] == 'brak_obl':
+            return int(row['SYMETRIA_2_DEF'])
+        if row['SYMETRIA_2_DEF'] == 'brak_obl':
+            return int(row['SYMETRIA_1_DEF'])
         else:
             return row['SYMETRIA_1_DEF'] & row['SYMETRIA_2_DEF']
 
-    def define_symmetry(self, first_symmetry_columns, second_symmetry_columns):
+
+
+
+    def define_symmetry(self, first_symmetry_columns, second_symmetry_columns, suffix="_diff"):
         for i, mini_df in enumerate(self.mini_dfs):
+            mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
             #only for air audiometry
-            if mini_df.loc[0, self.type_col] in self.air_audiometry:
-                if mini_df.shape[0] != 2:
-                    mini_df.loc[:, 'SYMETRIA'] = "brak _obl"
-                    continue
+            #if grouped.loc[0, self.type_col] in self.air_audiometry:
+            for key in grouped:
+                if key == "air":
+                    group = grouped[key]
+                    if group.shape[0] != 2:
+                        group.loc[:, 'SYMETRIA'] = "brak _obl"
+                        continue
 
-                diff_def1 = self.compute_diff(mini_df, first_symmetry_columns)
-                diff_def2 = self.compute_diff(mini_df, second_symmetry_columns)
+                    diff_def1 = self.compute_diff(group, first_symmetry_columns)
+                    diff_def2 = self.compute_diff(group, second_symmetry_columns)
 
-                mini_df['SYMETRIA_1_DEF'] = self.check_symmetry_def1(diff_def1)
-                mini_df['SYMETRIA_2_DEF'] = self.check_symmetry_def2(diff_def2)
+                    group['SYMETRIA_1_DEF'] = self.check_symmetry_def1(diff_def1)
+                    group['SYMETRIA_2_DEF'] = self.check_symmetry_def2(diff_def2)
+                    group['SYMETRIA'] = group.apply(self.combine_sym, axis=1)
 
-                mini_df['SYMETRIA'] = mini_df.apply(self.combine_sym, axis=1)
 
+                    diff_columns = [col + suffix for col in first_symmetry_columns]
+                    for col in diff_columns:
+                        mini_df[col] = diff_def1[col].iloc[0]
+                    mini_df['SYMETRIA_1_DEF'] = group['SYMETRIA_1_DEF']
+                    mini_df['SYMETRIA_2_DEF'] = group['SYMETRIA_2_DEF']
+                    mini_df['SYMETRIA'] = group['SYMETRIA']
 
     def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, hf_columns):
         numeric_cols = PTA2_columns + PTA4_columns + hf_columns
