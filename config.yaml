@@ -67,14 +67,22 @@ pta_columns:
     - WYNIK_X_8000
 
 first_symmetry_columns:
+  - WYNIK_X_125
+  - WYNIK_X_250
   - WYNIK_X_500
+  - WYNIK_X_750
   - WYNIK_X_1000
+  - WYNIK_X_1500
   - WYNIK_X_2000
+  - WYNIK_X_3000
   - WYNIK_X_4000
+  - WYNIK_X_6000
   - WYNIK_X_8000
 
 second_symmetry_columns:
   - WYNIK_X_2000
+  - WYNIK_X_3000
   - WYNIK_X_4000
+  - WYNIK_X_6000
   - WYNIK_X_8000
 
