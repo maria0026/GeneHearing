@@ -4,6 +4,7 @@ datainterimdirectory: data/interim/
 dataprocesseddirectory: data/processed/
 dataname: export_all_tables
 mri_dataname: mri
+genetic_dataname: DFNB1_2025-10-10
 mapping: anon_mapping
 resultsdirectory: results/
 
