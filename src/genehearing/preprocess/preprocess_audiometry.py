@@ -28,9 +28,10 @@ def main():
 
     first_symmetry_columns = config["first_symmetry_columns"]
     second_symmetry_columns = config["second_symmetry_columns"]
+
     tonal_audiometry_processor.define_symmetry(first_symmetry_columns, second_symmetry_columns)
     
-    #tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, hfPTA_columns)
+    tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, hfPTA_columns)
     tonal_audiometry_processor.save_processed_df(config["dataprocesseddirectory"])
 
     #tonal_audiometry_processor.select_better_air_pta()
