@@ -51,19 +51,20 @@ class TonalAudiometry():
 
         print(f'Created {len(self.mini_dfs)} dataframes for each patient and each examination')
 
-    def assign_group(self,typ):
-        if typ in self.air_audiometry:
+    def assign_group(self, typ):
+        #return air or bone audiometry
+        if typ in self.air_audiometry: 
             return "air"
         elif typ in self.bone_audiometry:
             return "bone"   
 
 
     def merge_ear(self, group, ear):
-        group = group[group['ear_side']== ear]
+        group = group[group['ear_side']== ear] #group by ear, create a dict
         if group.shape[0] > 1:
             row_first_left = group[group['ear_side'] == ear].iloc[0]
             row_second_left = group[group['ear_side'] == ear].iloc[1]
-            merged_row = row_first_left.combine_first(row_second_left)
+            merged_row = row_first_left.combine_first(row_second_left) #combine masked and not masked audiometry
             #print(merged_row)
             #update values with merged from masking and not masking
             idx_first = group[group['ear_side'] == ear].index[0]
@@ -79,7 +80,7 @@ class TonalAudiometry():
         ears = ['L', 'P']
         for i, mini_df in enumerate(self.mini_dfs):
             mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
-            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")} #group by air and bone audiometry
             all_groups_df = pd.DataFrame()
             for key in grouped:
                 ear_dfs = pd.DataFrame()
@@ -87,11 +88,11 @@ class TonalAudiometry():
                 group['ear_side'] = group[self.earside_col].str.extract(r"(lewego|prawego)")
                 group['ear_side'] = group['ear_side'].map({"lewego": "L", "prawego": "P"})
                 for ear in ears:
-                    ear_df = self.merge_ear(group, ear)
+                    ear_df = self.merge_ear(group, ear) #merge ear in each audiometry type
                     #print(ear_df)
-                    ear_dfs = pd.concat([ear_dfs, ear_df], axis=0)
+                    ear_dfs = pd.concat([ear_dfs, ear_df], axis=0) #merge with other ear
                 #print(ear_dfs)
-                all_groups_df = pd.concat([all_groups_df, ear_dfs], axis=0)
+                all_groups_df = pd.concat([all_groups_df, ear_dfs], axis=0) #merge bone and air audiometry
                 #print(all_groups_df)
             self.mini_dfs[i] = all_groups_df
             #print(self.mini_dfs[i])
@@ -133,11 +134,9 @@ class TonalAudiometry():
             return row['SYMETRIA_1_DEF'] & row['SYMETRIA_2_DEF']
 
 
-
-
     def define_symmetry(self, first_symmetry_columns, second_symmetry_columns, suffix="_diff"):
         for i, mini_df in enumerate(self.mini_dfs):
-            mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
+            #mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
             grouped = {g: d for g, d in mini_df.groupby("GROUP")}
             #only for air audiometry
             #if grouped.loc[0, self.type_col] in self.air_audiometry:
@@ -145,37 +144,67 @@ class TonalAudiometry():
                 if key == "air":
                     group = grouped[key]
                     if group.shape[0] != 2:
-                        group.loc[:, 'SYMETRIA'] = "brak _obl"
-                        continue
+                        group.loc[:, 'SYMETRIA'] = "brak_obl"
+                    else:
+                        diff_def1 = self.compute_diff(group, first_symmetry_columns)
+                        diff_def2 = self.compute_diff(group, second_symmetry_columns)
 
-                    diff_def1 = self.compute_diff(group, first_symmetry_columns)
-                    diff_def2 = self.compute_diff(group, second_symmetry_columns)
-
-                    group['SYMETRIA_1_DEF'] = self.check_symmetry_def1(diff_def1)
-                    group['SYMETRIA_2_DEF'] = self.check_symmetry_def2(diff_def2)
-                    group['SYMETRIA'] = group.apply(self.combine_sym, axis=1)
+                        group['SYMETRIA_1_DEF'] = self.check_symmetry_def1(diff_def1)
+                        group['SYMETRIA_2_DEF'] = self.check_symmetry_def2(diff_def2)
+                        group['SYMETRIA'] = group.apply(self.combine_sym, axis=1)
 
 
-                    diff_columns = [col + suffix for col in first_symmetry_columns]
-                    for col in diff_columns:
-                        mini_df[col] = diff_def1[col].iloc[0]
-                    mini_df['SYMETRIA_1_DEF'] = group['SYMETRIA_1_DEF']
-                    mini_df['SYMETRIA_2_DEF'] = group['SYMETRIA_2_DEF']
-                    mini_df['SYMETRIA'] = group['SYMETRIA']
+                        diff_columns = [col + suffix for col in first_symmetry_columns]
+                        for col in diff_columns:
+                            mini_df[col] = diff_def1[col].iloc[0]
+                        self.mini_dfs[i]['SYMETRIA_1_DEF'] = group['SYMETRIA_1_DEF']
+                        self.mini_dfs[i]['SYMETRIA_2_DEF'] = group['SYMETRIA_2_DEF']
+                    self.mini_dfs[i]['SYMETRIA'] = group['SYMETRIA']
+
+
+
+    def calculate_pta(self, df, PTA2_columns, PTA4_columns, hf_columns):
+        df['PTA2'] = df[PTA2_columns].mean(axis=1)
+        df['PTA4'] = df[PTA4_columns].mean(axis=1)
+        df['hfPTA'] = df[hf_columns].mean(axis=1)
 
     def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, hf_columns):
         numeric_cols = PTA2_columns + PTA4_columns + hf_columns
         text_cols = [col for col in self.data.columns if col not in numeric_cols]
+
         for i, mini_df in enumerate(self.mini_dfs):
-            mean_row = pd.DataFrame({
-                **{col: [mini_df[col].mean()] for col in numeric_cols},      # średnie dla liczbowych
-                **{col: [mini_df[col].iloc[0]] for col in text_cols}         # pierwszy rekord dla tekstowych
-            })
-            mean_row['PTA2'] = mean_row[PTA2_columns].mean(axis=1)
-            mean_row['PTA4'] = mean_row[PTA4_columns].mean(axis=1)
-            mean_row['hfPTA'] = mean_row[hf_columns].mean(axis=1)
-            self.mini_dfs[i] = mean_row
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            air_sym = grouped["air"]
+            result_parts = []
+            if not air_sym.empty:
+                sym = grouped["air"].iloc[0]['SYMETRIA']
+            else:
+                sym = 0
+            for key, group in grouped.items():
+                if sym==1 and group.shape[0]==2:
+                    mean_row = pd.DataFrame({
+                        **{col: [group[col].mean()] for col in numeric_cols},      # średnie dla liczbowych
+                        **{col: [group[col].iloc[0]] for col in text_cols}         # pierwszy rekord dla tekstowych
+                    })
+                    pta2_mean = mean_row[PTA2_columns].mean(axis=1).iloc[0]
+                    pta4_mean = mean_row[PTA4_columns].mean(axis=1).iloc[0]
+                    ptahf_mean = mean_row[hf_columns].mean(axis=1).iloc[0]
+                    group.loc[:, 'PTA2'] = pta2_mean
+                    group.loc[:, 'PTA4'] = pta4_mean
+                    group.loc[:, 'hfPTA'] = ptahf_mean
         
+                    #group.loc[:,'PTA2'] = mean_row[PTA2_columns].mean(axis=1)
+                    #group.loc[:,'PTA4'] = mean_row[PTA4_columns].mean(axis=1)
+                    #group.loc[:,'hfPTA'] = mean_row[hf_columns].mean(axis=1)
+                else:
+                    group['PTA2'] = mini_df[PTA2_columns].mean(axis=1)
+                    group['PTA4'] = mini_df[PTA4_columns].mean(axis=1)
+                    group['hfPTA'] = mini_df[hf_columns].mean(axis=1)
+
+                result_parts.append(group)
+            self.mini_dfs[i] = pd.concat(result_parts)
+            #print(self.mini_dfs[i])
+
         print('PTA calculation completed.')
 
     def calculate_pta(self, PTA2_columns, PTA4_columns, hf_columns):
@@ -196,41 +225,3 @@ class TonalAudiometry():
         print(f'Saving to {output_path}audiometry_{self.tonal_suffix}.csv completed.')
 
 
-
-    def get_min_row(self, df, column):
-        row = df.nsmallest(1, column)
-        return row.iloc[0] if not row.empty else None
-
-    def select_better_air_pta(self):
-
-        #column names for grouping
-        two_ear_group_columns = self.group_columns.copy()
-        two_ear_group_columns.remove(self.earside_col)
-
-        merged_df = pd.concat(self.mini_dfs, ignore_index=True)
-        rows = []
-        
-        for _, group in merged_df.groupby(two_ear_group_columns):
-            air = group[group[self.type_col].isin(*(self.air_audiometry))].copy()
-            air['ear_side'] = air[self.earside_col].str.extract(r"(lewego|prawego)")
-            air['ear_side'] = air['ear_side'].map({"lewego": "L", "prawego": "P"})
-
-            row_min_pta2 = self.get_min_row(air, 'PTA2')
-            row_min_hfPTA = self.get_min_row(air, 'hfPTA')
-
-            rows.append({
-                self.pesel_columnname: str(group[self.pesel_columnname].values[0]),
-                'PTA2': row_min_pta2['PTA2'] if row_min_pta2 is not None else None,
-                'earside_PTA2': row_min_pta2['ear_side'] if row_min_pta2 is not None else None,
-                'hfPTA': row_min_hfPTA['hfPTA'] if row_min_hfPTA is not None else None,
-                'earside_hfPTA': row_min_hfPTA['ear_side'] if row_min_hfPTA is not None else None,
-                self.date_column: group['date_year_month_day'].values[0]
-            })
-        self.final_mri_df = pd.DataFrame(rows)
-        #print(final_df)
-
-    def save_processed_to_mri_df(self, output_path):
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        self.final_mri_df.to_csv(f'{output_path}audiometry_{self.tonal_suffix}_mri.csv', index=False)
-        print(f'Saving to {output_path}audiometry_{self.tonal_suffix}_mri.csv completed.')
