@@ -87,3 +87,21 @@ second_symmetry_columns:
   - WYNIK_X_6000
   - WYNIK_X_8000
 
+threshold_def1: 20
+threshold_def2: 15
+
+biap_hearing_levels:
+  - { max: 20, label: "Prawidlowy" }
+  - { max: 40, label: "Lekki" }
+  - { max: 70, label: "Umiarkowany" }
+  - { max: 90, label: "Znaczny" }
+  - { max: 150, label: "Gleboki" }
+
+asha_hearing_levels:
+  - { max: 15, label: "Prawidłowy" }
+  - { max: 25, label: "Nieznaczny" }
+  - { max: 40, label: "Lekki" }
+  - { max: 55, label: "Umiarkowany" }
+  - { max: 70, label: "Umiarkowanie ciężki" }
+  - { max: 90, label: "Znaczny" }
+  - { max: 150, label: "Głęboki" }
