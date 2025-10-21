@@ -20,7 +20,8 @@ def main():
                                                  )
     tonal_audiometry_processor.filter_audiometry_type()
     tonal_audiometry_processor.patients_dfs()
-    tonal_audiometry_processor.merge_mask()
+    tonal_audiometry_processor.add_audiometry_group_column()
+    tonal_audiometry_processor.merge_masked()
 
     PTA2_columns = config["pta_columns"]["PTA2"]
     PTA4_columns = config["pta_columns"]["PTA4"]
@@ -29,9 +30,11 @@ def main():
     first_symmetry_columns = config["first_symmetry_columns"]
     second_symmetry_columns = config["second_symmetry_columns"]
 
-    tonal_audiometry_processor.define_symmetry(first_symmetry_columns, second_symmetry_columns)
-    
+    tonal_audiometry_processor.define_symmetry(first_symmetry_columns, second_symmetry_columns, config["threshold_def1"], config["threshold_def2"])
     tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, hfPTA_columns)
+
+    tonal_audiometry_processor.classificate_hearing_loss(config["biap_hearing_levels"], config["asha_hearing_levels"])
+
     tonal_audiometry_processor.save_processed_df(config["dataprocesseddirectory"])
 
     #tonal_audiometry_processor.select_better_air_pta()
