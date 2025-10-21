@@ -142,7 +142,7 @@ class TonalAudiometry():
             #if grouped.loc[0, self.type_col] in self.air_audiometry:
             for key in grouped:
                 if key == "air":
-                    group = grouped[key]
+                    group = grouped[key] #group inherits indexes after mini_df
                     if group.shape[0] != 2:
                         group.loc[:, 'SYMETRIA'] = "brak_obl"
                     else:
@@ -153,12 +153,13 @@ class TonalAudiometry():
                         group['SYMETRIA_2_DEF'] = self.check_symmetry_def2(diff_def2)
                         group['SYMETRIA'] = group.apply(self.combine_sym, axis=1)
 
-
                         diff_columns = [col + suffix for col in first_symmetry_columns]
                         for col in diff_columns:
                             mini_df[col] = diff_def1[col].iloc[0]
+
                         self.mini_dfs[i]['SYMETRIA_1_DEF'] = group['SYMETRIA_1_DEF']
                         self.mini_dfs[i]['SYMETRIA_2_DEF'] = group['SYMETRIA_2_DEF']
+
                     self.mini_dfs[i]['SYMETRIA'] = group['SYMETRIA']
 
 
@@ -173,49 +174,45 @@ class TonalAudiometry():
         text_cols = [col for col in self.data.columns if col not in numeric_cols]
 
         for i, mini_df in enumerate(self.mini_dfs):
-            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
-            air_sym = grouped["air"]
-            result_parts = []
-            if not air_sym.empty:
-                sym = grouped["air"].iloc[0]['SYMETRIA']
-            else:
-                sym = 0
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")} #group by air and bone
             for key, group in grouped.items():
-                if sym==1 and group.shape[0]==2:
-                    mean_row = pd.DataFrame({
-                        **{col: [group[col].mean()] for col in numeric_cols},      # średnie dla liczbowych
-                        **{col: [group[col].iloc[0]] for col in text_cols}         # pierwszy rekord dla tekstowych
-                    })
-                    pta2_mean = mean_row[PTA2_columns].mean(axis=1).iloc[0]
-                    pta4_mean = mean_row[PTA4_columns].mean(axis=1).iloc[0]
-                    ptahf_mean = mean_row[hf_columns].mean(axis=1).iloc[0]
-                    group.loc[:, 'PTA2'] = pta2_mean
-                    group.loc[:, 'PTA4'] = pta4_mean
-                    group.loc[:, 'hfPTA'] = ptahf_mean
-        
-                    #group.loc[:,'PTA2'] = mean_row[PTA2_columns].mean(axis=1)
-                    #group.loc[:,'PTA4'] = mean_row[PTA4_columns].mean(axis=1)
-                    #group.loc[:,'hfPTA'] = mean_row[hf_columns].mean(axis=1)
-                else:
-                    group['PTA2'] = mini_df[PTA2_columns].mean(axis=1)
-                    group['PTA4'] = mini_df[PTA4_columns].mean(axis=1)
-                    group['hfPTA'] = mini_df[hf_columns].mean(axis=1)
+                if key == "air": #calculate only for air audiometry
+                    sym = grouped["air"].iloc[0]['SYMETRIA'] #symmetry condition
+                    if sym == 1 and group.shape[0] == 2:
+                        df_source = pd.DataFrame({
+                            **{col: [group[col].mean()] for col in numeric_cols},
+                            **{col: [group[col].iloc[0]] for col in text_cols}
+                        })
+                    else:
+                        df_source = group
 
-                result_parts.append(group)
-            self.mini_dfs[i] = pd.concat(result_parts)
+                    pta2_mean, pta4_mean, ptahf_mean = self.calculate_pta(df_source, PTA2_columns, PTA4_columns, hf_columns)
+
+                    #wstawienie wyników do group
+                    if sym == 1 and group.shape[0] == 2:
+                        group.loc[:, 'PTA2'] = pta2_mean.item()
+                        group.loc[:, 'PTA4'] = pta4_mean.item()
+                        group.loc[:, 'hfPTA'] = ptahf_mean.item()
+                    else:
+                        group['PTA2'] = pta2_mean
+                        group['PTA4'] = pta4_mean
+                        group['hfPTA'] = ptahf_mean
+
+                
+                    self.mini_dfs[i]['PTA2'] = group['PTA2']
+                    self.mini_dfs[i]['PTA4'] = group['PTA4']
+                    self.mini_dfs[i]['hfPTA'] = group['hfPTA']
+                #result_parts.append(group)
             #print(self.mini_dfs[i])
 
         print('PTA calculation completed.')
 
-    def calculate_pta(self, PTA2_columns, PTA4_columns, hf_columns):
-        for i, mini_df in enumerate(self.mini_dfs):
-            mini_df['PTA2'] = mini_df[PTA2_columns].mean(axis=1)
-            mini_df['PTA4'] = mini_df[PTA4_columns].mean(axis=1)
-            mini_df['hfPTA'] = mini_df[hf_columns].mean(axis=1)
-            self.mini_dfs[i] = mini_df
-        
-        print('PTA calculation completed.')
-    
+    def calculate_pta(self, df, PTA2_columns, PTA4_columns, hf_columns):
+        pta2_mean = df[PTA2_columns].mean(axis=1, skipna=False).round(1)
+        pta4_mean = df[PTA4_columns].mean(axis=1, skipna=False).round(1)
+        ptahf_mean = df[hf_columns].mean(axis=1, skipna=False).round(1)
+
+        return pta2_mean, pta4_mean, ptahf_mean
 
     def save_processed_df(self, output_path):
         merged_df = pd.concat(self.mini_dfs, ignore_index=True)
