@@ -315,100 +315,41 @@ class TonalAudiometry():
                         self.mini_dfs[i].loc[group.index, col] = group[col] #add column with differences
 
     def classificate_hearing_loss_type(self, criteria):
-        print(criteria)
-                
-    def classificate_hearing_loss_type_normal(self):
         for i, mini_df in enumerate(self.mini_dfs):
             grouped = {g: d for g, d in mini_df.groupby("GROUP")}
-            if len(grouped)!=2:
+            #jeśli nie ma dwóch grup (air + bone), nie określamy typu
+            if len(grouped) != 2:
                 self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
                 continue
+
             for ear in self.ears:
-                prawidlowy = True
-                for key, group in grouped.items():
-                    ear_row = group[group['ear_side'] == ear]
-                    if ear_row.empty:
-                        continue
-                    if key=='air':
-                        #print(ear_row)
-                        if ear_row['PTA4_condition'].item()!=1 or ear_row['first_option_zero_diff'].item()!=1:
-                            prawidlowy = False
-                    if key=='bone':
-                        missing_mask = group['bone_mean_condition'] == 'brak_obl'
-                        ear_to_update = group.loc[missing_mask, 'ear_side'].unique()
-                        mini_df.loc[mini_df['ear_side'].isin(ear_to_update), 'hearing_type'] = 'nie okreslono'
+                ear_assigned = False
+                for loss_type, rules in criteria.items():
+                    match = True
+                    for key, conditions in rules.items():
+                        group = grouped[key]
+                        ear_row = group[group['ear_side'] == ear]
+                        if ear_row.empty:
+                            match = False
+                            break
+                        for col, expected in conditions.items():
+                            #jeśli wartość nie pasuje do oczekiwanego, nie dopasowujemy
+                            if ear_row[col].item() != expected:
+                                match = False
+                                break
+                        if not match:
+                            break
+                    if match:
+                        #przypisanie typu ubytku do wszystkich wierszy tego ucha
+                        indices = mini_df[mini_df['ear_side'] == ear].index
+                        self.mini_dfs[i].loc[indices, 'hearing_type'] = loss_type
+                        ear_assigned = True
+                        break  #jeśli dopasowano typ, nie sprawdzaj innych
 
-                        if ear_row['bone_mean_condition'].item()!=1:
-                            prawidlowy = False
-
-                if prawidlowy:
-                    self.mini_dfs[i].loc[ear_row.index, 'hearing_type'] = "Słuch_prawidłowy"
-
-    def classificate_hearing_loss_type_conductive(self):
-        for i, mini_df in enumerate(self.mini_dfs):
-            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
-            if len(grouped)!=2:
-                continue
-            for ear in self.ears:
-                conductive = True
-                for key, group in grouped.items():
-                    ear_row = group[group['ear_side'] == ear]
-                    ear_indices = mini_df[mini_df['ear_side'] == ear].index
-                    if ear_row.empty:
-                        continue
-                    if key=='air':
-                        if ear_row['PTA4_condition'].item()!=0 or ear_row['first_option_10_diff'].item()!=1:
-                            conductive = False
-                    if key=='bone':
-                        if ear_row['bone_mean_condition'].item()!=1:
-                            conductive = False
-
-                if conductive:
-                    self.mini_dfs[i].loc[ear_indices, 'hearing_type'] = "Niedosłuch przewodzeniowy"
-
-    def classificate_hearing_loss_type_receiving(self):
-        for i, mini_df in enumerate(self.mini_dfs):
-            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
-            if len(grouped)!=2:
-                continue
-            
-            for ear in self.ears:
-                receiving = True
-                for key, group in grouped.items():
-                    ear_row = group[group['ear_side'] == ear]
-                    if ear_row.empty:
-                        continue
-                    if key=='air':
-                        if ear_row['PTA4_condition'].item()!=0 or ear_row['hfPTA_condition'].item()!=0 or ear_row['first_option_zero_diff'].item()!=1:
-                            receiving = False
-                    if key=='bone':
-                        if ear_row['bone_mean_condition'].item()!=0:
-                            receiving = False
-
-                if receiving:
-                    self.mini_dfs[i].loc[ear_row.index, 'hearing_type'] = "Niedosłuch odbiorczy"
-
-    def classificate_hearing_loss_type_mixed(self):
-        for i, mini_df in enumerate(self.mini_dfs):
-            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
-            if len(grouped)!=2:
-                continue
-            
-            for ear in self.ears:
-                mixed = True
-                for key, group in grouped.items():
-                    ear_row = group[group['ear_side'] == ear]
-                    if ear_row.empty:
-                        continue
-                    if key=='air':
-                        if ear_row['PTA4_condition'].item()!=0 or ear_row['first_option_10_diff'].item()!=1:
-                            mixed = False
-                    if key=='bone':
-                        if ear_row['bone_mean_condition'].item()!=0:
-                            mixed = False
-
-                if mixed:
-                    self.mini_dfs[i].loc[ear_row.index, 'hearing_type'] = "Niedosłuch mieszany"
+                if not ear_assigned:
+                    #jeśli żaden typ nie pasuje, oznaczamy jako "nie określono"
+                    indices = mini_df[mini_df['ear_side'] == ear].index
+                    self.mini_dfs[i].loc[indices, 'hearing_type'] = "nie okreslono"
 
 
     def save_processed_df(self, output_path):
