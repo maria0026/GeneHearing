@@ -40,7 +40,7 @@ verbaldataname: audiometry_verbal
 freefielddataname: audiometry_free_field
 
 date_column: "DATA_BADANIA"
-description_column: "OPIS_BADANIA"
+description_columnname: "OPIS_BADANIA"
 audiometry_name_columnname: "NAZWA_AUDIOMETRII"
 audiometry_earside_columnname: "UWAGI_DO_AUDIOMETRII"
 audiometry_type_columnname: "TYP_AUDIOMETRII"
