@@ -105,3 +105,57 @@ asha_hearing_levels:
   - { max: 70, label: "Umiarkowanie ciężki" }
   - { max: 90, label: "Znaczny" }
   - { max: 150, label: "Głęboki" }
+
+#hearing loss type
+pta_threshold: 20
+
+bone_all_mean_columns:
+  - "WYNIK_X_500"
+  - "WYNIK_X_1000"
+  - "WYNIK_X_2000"
+  - "WYNIK_X_4000"
+
+first_opt_columns:
+  - "WYNIK_X_250"
+  - "WYNIK_X_500"
+  - "WYNIK_X_1000"
+  - "WYNIK_X_2000"
+first_opt_threshold: 10
+first_opt_how_many: 3
+
+second_opt_columns:
+  - "WYNIK_X_250"
+  - "WYNIK_X_500"
+  - "WYNIK_X_1000"
+  - "WYNIK_X_2000"
+  - "WYNIK_X_4000"
+
+hearing_loss_criteria:
+  Sluch_prawidlowy:
+    air:
+      PTA4_condition: 1
+      first_option_zero_diff: 1
+    bone:
+      bone_mean_condition: 1
+
+  Niedosłuch_przewodzeniowy:
+    air:
+      PTA4_condition: 0
+      first_option_10_diff: 1
+    bone:
+      bone_mean_condition: 1
+
+  Niedosłuch_odbiorczy:
+    air:
+      PTA4_condition: 0
+      hfPTA_condition: 0
+      first_option_zero_diff: 1
+    bone:
+      bone_mean_condition: 0
+
+  Niedosłuch_mieszany:
+    air:
+      PTA4_condition: 0
+      first_option_10_diff: 1
+    bone:
+      bone_mean_condition: 0

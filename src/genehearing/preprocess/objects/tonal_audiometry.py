@@ -75,7 +75,8 @@ class TonalAudiometry():
         #update values with merged from masking and not masking
         df.loc[idx_first] = merged_row
         #delete second row
-        return df.loc[~df.index.isin([idx_second])]
+        #return df.loc[~df.index.isin([idx_second])]
+        return df.loc[[idx_first]]
 
 
     def merge_masked_by_ear(self, group, ear):
@@ -207,9 +208,9 @@ class TonalAudiometry():
 
 
     def calculate_pta(self, df, PTA2_columns, PTA4_columns, hf_columns):
-        pta2_mean = df[PTA2_columns].mean(axis=1, skipna=False).round(1)
-        pta4_mean = df[PTA4_columns].mean(axis=1, skipna=False).round(1)
-        ptahf_mean = df[hf_columns].mean(axis=1, skipna=False).round(1)
+        pta2_mean = df[PTA2_columns].mean(axis=1, skipna=False).round(0)
+        pta4_mean = df[PTA4_columns].mean(axis=1, skipna=False).round(0)
+        ptahf_mean = df[hf_columns].mean(axis=1, skipna=False).round(0)
         return pta2_mean, pta4_mean, ptahf_mean
     
 
@@ -223,7 +224,192 @@ class TonalAudiometry():
         for i, mini_df in enumerate(self.mini_dfs):
             mini_df["BIAP"] = mini_df['PTA4'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
             mini_df["ASHA"] = mini_df['PTA4'].apply(lambda x: self.map_hearing_level(asha_hearing_levels, x))
-        print("Hearing loss calcaultion completed")
+        print("Hearing loss calculation completed")
+
+
+    def check_threshold(self, threshold, value):
+        if value < threshold:
+            return 1
+        elif value >= threshold:
+            return 0
+        
+
+    def hearing_loss_type_cond1(self, df, threshold):
+        df["PTA4_condition"] = df['PTA4'].apply(lambda x: self.check_threshold(threshold, x))
+        df["hfPTA_condition"] = df['hfPTA'].apply(lambda x: self.check_threshold(threshold, x))
+        return df
+    
+
+    def hearing_loss_type_cond2(self, group, bone_mean_columns, threshold):
+        group = group.copy()
+        group['bone_mean'] = pd.Series(dtype='object')
+        group['bone_mean_condition'] = pd.Series(dtype='object')
+
+        for idx, row in group.iterrows():
+            if row[bone_mean_columns].isna().any():
+                group.loc[idx, 'bone_mean'] = "brak_obl"
+                group.loc[idx, 'bone_mean_condition'] = "brak_obl"
+            else:
+                mean_val = round(row[bone_mean_columns].mean(), 1)
+                group.loc[idx, 'bone_mean'] = mean_val
+                group.loc[idx, 'bone_mean_condition'] = self.check_threshold(threshold, mean_val)
+
+        return group
+
+
+    def hearing_type_pta_and_bone_audiometry(self, threshold, bone_mean_columns):
+        for i, mini_df in enumerate(self.mini_dfs):
+            mini_df = self.hearing_loss_type_cond1(mini_df, threshold)
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            for key, group in grouped.items():
+                if key == "bone":
+                    group = self.hearing_loss_type_cond2(group, bone_mean_columns, threshold)
+                    self.mini_dfs[i]['bone_mean'] = group['bone_mean']
+                    self.mini_dfs[i]['bone_mean_condition'] = group['bone_mean_condition']
+
+
+    def check_differences_opt1_zero(self, diff_df, value = 0, expected_length=4):
+        diff_df = diff_df.dropna(axis=1, how='all')
+        if (diff_df.shape[1]!=expected_length):
+            return 'brak_obl'
+        elif (diff_df.iloc[0]!=0).sum() == value:
+            return 1
+        else:
+            return 0
+        
+
+    def check_differences_opt1(self, diff_df, threshold=10, how_many=3, expected_length=4):
+        diff_df = diff_df.dropna(axis=1, how='all')
+        if (diff_df.shape[1]!=expected_length):
+            return "brak_obl"
+
+        row = diff_df.iloc[0]
+        exceeds = (row.abs() >= threshold).astype(int)
+
+        max_run = 0
+        current_run = 0
+        for val in exceeds:
+            if val:
+                current_run += 1
+                max_run = max(max_run, current_run)
+            else:
+                current_run = 0
+        return int(max_run >= how_many)
+    
+
+    def hearing_type_differences_between_audiometries(self, first_opt_columns, threshold, how_many_values):
+        for i, mini_df in enumerate(self.mini_dfs):
+            ears_grouped = {g: d for g, d in mini_df.groupby("ear_side")}
+            for key, group in ears_grouped.items():
+                diff_opt_1 = self.compute_diff(group, first_opt_columns, suffix="_diff_first_opt")
+                #diff_opt_2 = self.compute_diff(group, second_opt_columns, suffix="_diff_second_opt")
+
+                group['first_option_zero_diff'] = self.check_differences_opt1_zero(diff_opt_1, value=0, expected_length=len(first_opt_columns))
+                group[f'first_option_{threshold}_diff'] = self.check_differences_opt1(diff_opt_1, threshold=threshold, how_many=how_many_values, expected_length=len(first_opt_columns))
+                self.mini_dfs[i].loc[group.index, 'first_option_zero_diff'] = group['first_option_zero_diff'].astype('object')
+                self.mini_dfs[i].loc[group.index, f'first_option_{threshold}_diff'] = group[f'first_option_{threshold}_diff'].astype('object')
+
+                if not diff_opt_1.empty:
+                    for col in diff_opt_1.columns:
+                        group[col] = diff_opt_1[col].iloc[0]
+                        self.mini_dfs[i].loc[group.index, col] = group[col] #add column with differences
+
+    def classificate_hearing_loss(self, criteria):
+        print(criteria)
+                
+    def classificate_hearing_loss_type_normal(self):
+        for i, mini_df in enumerate(self.mini_dfs):
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            if len(grouped)!=2:
+                self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
+                continue
+            for ear in self.ears:
+                prawidlowy = True
+                for key, group in grouped.items():
+                    ear_row = group[group['ear_side'] == ear]
+                    if ear_row.empty:
+                        continue
+                    if key=='air':
+                        #print(ear_row)
+                        if ear_row['PTA4_condition'].item()!=1 or ear_row['first_option_zero_diff'].item()!=1:
+                            prawidlowy = False
+                    if key=='bone':
+                        missing_mask = group['bone_mean_condition'] == 'brak_obl'
+                        ear_to_update = group.loc[missing_mask, 'ear_side'].unique()
+                        mini_df.loc[mini_df['ear_side'].isin(ear_to_update), 'hearing_type'] = 'nie okreslono'
+
+                        if ear_row['bone_mean_condition'].item()!=1:
+                            prawidlowy = False
+
+                if prawidlowy:
+                    self.mini_dfs[i].loc[ear_row.index, 'hearing_type'] = "Słuch_prawidłowy"
+
+    def classificate_hearing_loss_type_conductive(self):
+        for i, mini_df in enumerate(self.mini_dfs):
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            if len(grouped)!=2:
+                continue
+            for ear in self.ears:
+                conductive = True
+                for key, group in grouped.items():
+                    ear_row = group[group['ear_side'] == ear]
+                    ear_indices = mini_df[mini_df['ear_side'] == ear].index
+                    if ear_row.empty:
+                        continue
+                    if key=='air':
+                        if ear_row['PTA4_condition'].item()!=0 or ear_row['first_option_10_diff'].item()!=1:
+                            conductive = False
+                    if key=='bone':
+                        if ear_row['bone_mean_condition'].item()!=1:
+                            conductive = False
+
+                if conductive:
+                    self.mini_dfs[i].loc[ear_indices, 'hearing_type'] = "Niedosłuch przewodzeniowy"
+
+    def classificate_hearing_loss_type_receiving(self):
+        for i, mini_df in enumerate(self.mini_dfs):
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            if len(grouped)!=2:
+                continue
+            
+            for ear in self.ears:
+                receiving = True
+                for key, group in grouped.items():
+                    ear_row = group[group['ear_side'] == ear]
+                    if ear_row.empty:
+                        continue
+                    if key=='air':
+                        if ear_row['PTA4_condition'].item()!=0 or ear_row['hfPTA_condition'].item()!=0 or ear_row['first_option_zero_diff'].item()!=1:
+                            receiving = False
+                    if key=='bone':
+                        if ear_row['bone_mean_condition'].item()!=0:
+                            receiving = False
+
+                if receiving:
+                    self.mini_dfs[i].loc[ear_row.index, 'hearing_type'] = "Niedosłuch odbiorczy"
+
+    def classificate_hearing_loss_type_mixed(self):
+        for i, mini_df in enumerate(self.mini_dfs):
+            grouped = {g: d for g, d in mini_df.groupby("GROUP")}
+            if len(grouped)!=2:
+                continue
+            
+            for ear in self.ears:
+                mixed = True
+                for key, group in grouped.items():
+                    ear_row = group[group['ear_side'] == ear]
+                    if ear_row.empty:
+                        continue
+                    if key=='air':
+                        if ear_row['PTA4_condition'].item()!=0 or ear_row['first_option_10_diff'].item()!=1:
+                            mixed = False
+                    if key=='bone':
+                        if ear_row['bone_mean_condition'].item()!=0:
+                            mixed = False
+
+                if mixed:
+                    self.mini_dfs[i].loc[ear_row.index, 'hearing_type'] = "Niedosłuch mieszany"
+
 
     def save_processed_df(self, output_path):
         merged_df = pd.concat(self.mini_dfs, ignore_index=True)
