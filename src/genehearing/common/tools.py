@@ -1,9 +1,9 @@
 import yaml
 import pandas as pd
 
-def load_config():
+def load_config(path="config.yaml"):
     # Read in the configuration file
-    with open('config.yaml') as p:
+    with open(path) as p:
         config = yaml.safe_load(p)
     return config
 
