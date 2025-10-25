@@ -314,7 +314,7 @@ class TonalAudiometry():
                         group[col] = diff_opt_1[col].iloc[0]
                         self.mini_dfs[i].loc[group.index, col] = group[col] #add column with differences
 
-    def classificate_hearing_loss(self, criteria):
+    def classificate_hearing_loss_type(self, criteria):
         print(criteria)
                 
     def classificate_hearing_loss_type_normal(self):
