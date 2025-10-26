@@ -13,14 +13,15 @@ def main():
                                                  columnnames={'pesel_columnname': config["pesel_columnname"],
                                                                 'audiometry_earside_columnname': config['audiometry_earside_columnname'],
                                                                 'date_column': config['date_column'],
-                                                                'type_column': config['audiometry_type_columnname']
+                                                                'type_column': config['audiometry_type_columnname'],
+                                                                'description_column': config['description_columnname']
                                                                },
                                                  air_audiometry=config['air_audiometry'],
                                                  bone_audiometry=config['bone_audiometry']
                                                  )
     tonal_audiometry_processor.filter_audiometry_type()
     tonal_audiometry_processor.patients_dfs()
-    tonal_audiometry_processor.add_audiometry_group_column()
+    tonal_audiometry_processor.add_audiometry_group_and_ear_column()
     tonal_audiometry_processor.merge_masked()
 
     PTA2_columns = config["pta_columns"]["PTA2"]
