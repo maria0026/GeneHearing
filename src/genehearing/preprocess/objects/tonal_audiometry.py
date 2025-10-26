@@ -21,6 +21,7 @@ class TonalAudiometry():
         self.earside_col = columnnames['audiometry_earside_columnname']
         self.date_column = columnnames['date_column']
         self.type_col = columnnames['type_column']
+        self.description_col = columnnames['description_column']
 
         self.tonal_suffix = tonal_suffix
         self.air_audiometry = air_audiometry
@@ -63,15 +64,17 @@ class TonalAudiometry():
             return "bone"   
         
 
-    def add_audiometry_group_column(self):
+    def add_audiometry_group_and_ear_column(self):
         """Dodaje kolumnę GROUP do każdego mini_df."""
         for i, mini_df in enumerate(self.mini_dfs):
             mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
+            mini_df['ear_side'] = mini_df[self.earside_col].str.extract(r"(lewego|prawego)")
+            mini_df['ear_side'] = mini_df['ear_side'].map({"lewego": "L", "prawego": "P"})
 
 
     def keep_first_delete_second(self, df, ear, columnname, merged_row):
         idx_first = df[df[columnname] == ear].index[0]
-        idx_second = df[df[columnname] == ear].index[1]
+        #idx_second = df[df[columnname] == ear].index[1]
         #update values with merged from masking and not masking
         df.loc[idx_first] = merged_row
         #delete second row
@@ -80,17 +83,22 @@ class TonalAudiometry():
 
 
     def merge_masked_by_ear(self, group, ear):
-        group['ear_side'] = group[self.earside_col].str.extract(r"(lewego|prawego)")
-        group['ear_side'] = group['ear_side'].map({"lewego": "L", "prawego": "P"})
         group = group[group['ear_side']== ear] #choose only one ear
-        if group.shape[0] > 1:
-            row_first_left = group[group['ear_side'] == ear].iloc[0]
-            row_second_left = group[group['ear_side'] == ear].iloc[1]
-            merged_row = row_first_left.combine_first(row_second_left) #combine masked and not masked audiometry
-            mini_df = self.keep_first_delete_second(group, ear, 'ear_side', merged_row)
-            return mini_df
+        if group.shape[0] == 2:
+            group_to_keep = group
+        elif group.shape[0] > 2:
+            if group[self.description_col].notna().any():
+                for _, group_minutes in group.groupby(self.date_column):
+                    if group_minutes[self.description_col].isna().any():
+                        group_to_keep = group_minutes
+            else:
+                latest_date = group[self.date_column].max()
+                group_to_keep = group[group[self.date_column] == latest_date]
         else:
             return group
+        
+        merged_row = group_to_keep.iloc[0].combine_first(group_to_keep.iloc[1])
+        return self.keep_first_delete_second(group_to_keep, ear, 'ear_side', merged_row)
 
 
     def merge_masked(self):
@@ -102,11 +110,8 @@ class TonalAudiometry():
                 for ear in self.ears:
                     ear_df = self.merge_masked_by_ear(group, ear) #merge ear in each audiometry type
                     ear_dfs = pd.concat([ear_dfs, ear_df], axis=0) #merge with other ear
-                #print(ear_dfs)
                 all_groups_df = pd.concat([all_groups_df, ear_dfs], axis=0) #merge bone and air audiometry
-                #print(all_groups_df)
             self.mini_dfs[i] = all_groups_df
-            #print(self.mini_dfs[i])
         print(f'Merging rows completed.')
 
 
@@ -313,6 +318,7 @@ class TonalAudiometry():
                     for col in diff_opt_1.columns:
                         group[col] = diff_opt_1[col].iloc[0]
                         self.mini_dfs[i].loc[group.index, col] = group[col] #add column with differences
+
 
     def classificate_hearing_loss_type(self, criteria):
         for i, mini_df in enumerate(self.mini_dfs):
