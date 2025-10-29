@@ -98,13 +98,13 @@ biap_hearing_levels:
   - { max: 150, label: "Gleboki" }
 
 asha_hearing_levels:
-  - { max: 15, label: "Prawidłowy" }
+  - { max: 15, label: "Prawidlowy" }
   - { max: 25, label: "Nieznaczny" }
   - { max: 40, label: "Lekki" }
   - { max: 55, label: "Umiarkowany" }
-  - { max: 70, label: "Umiarkowanie ciężki" }
+  - { max: 70, label: "Umiarkowanie_ciezki" }
   - { max: 90, label: "Znaczny" }
-  - { max: 150, label: "Głęboki" }
+  - { max: 150, label: "Gleboki" }
 
 #hearing loss type
 pta_threshold: 20
@@ -138,14 +138,14 @@ hearing_loss_criteria:
     bone:
       bone_mean_condition: 1
 
-  Niedosłuch_przewodzeniowy:
+  Niedosluch_przewodzeniowy:
     air:
       PTA4_condition: 0
       first_option_10_diff: 1
     bone:
       bone_mean_condition: 1
 
-  Niedosłuch_odbiorczy:
+  Niedosluch_odbiorczy:
     air:
       PTA4_condition: 0
       hfPTA_condition: 0
@@ -153,7 +153,7 @@ hearing_loss_criteria:
     bone:
       bone_mean_condition: 0
 
-  Niedosłuch_mieszany:
+  Niedosluch_mieszany:
     air:
       PTA4_condition: 0
       first_option_10_diff: 1
