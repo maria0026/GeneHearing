@@ -41,11 +41,6 @@ def main():
     tonal_audiometry_processor.hearing_type_differences_between_audiometries(config['first_opt_columns'], threshold=config['first_opt_threshold'], how_many_values=config['first_opt_how_many'])
     tonal_audiometry_processor.classificate_hearing_loss_type(config["hearing_loss_criteria"])
 
-    #tonal_audiometry_processor.classificate_hearing_loss_type_normal()
-    #tonal_audiometry_processor.classificate_hearing_loss_type_conductive()
-    #tonal_audiometry_processor.classificate_hearing_loss_type_receiving()
-    #tonal_audiometry_processor.classificate_hearing_loss_type_mixed()
-
     tonal_audiometry_processor.save_processed_df(config["dataprocesseddirectory"])
 
     #tonal_audiometry_processor.select_better_air_pta()
