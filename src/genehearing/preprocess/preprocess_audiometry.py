@@ -10,7 +10,7 @@ def main():
 
     tonal_audiometry_processor = TonalAudiometry(tonal_audiometry_datapath, 
                                                  tonal_suffix, 
-                                                 columnnames={'pesel_columnname': config["pesel_columnname"],
+                                                 columnnames={'patient_number_columnname': config["patient_number_columnname"],
                                                                 'audiometry_earside_columnname': config['audiometry_earside_columnname'],
                                                                 'date_column': config['date_column'],
                                                                 'type_column': config['audiometry_type_columnname'],
@@ -40,6 +40,7 @@ def main():
     
     tonal_audiometry_processor.hearing_type_differences_between_audiometries(config['first_opt_columns'], threshold=config['first_opt_threshold'], how_many_values=config['first_opt_how_many'])
     tonal_audiometry_processor.classificate_hearing_loss_type(config["hearing_loss_criteria"])
+
 
     tonal_audiometry_processor.save_processed_df(config["dataprocesseddirectory"])
 

@@ -11,8 +11,8 @@ class TonalAudiometry():
                   bone_audiometry=["BoneMask", "Bone"]):
         
 
-        self.pesel_columnname = columnnames['pesel_columnname']
-        self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.pesel_columnname: str}, encoding='cp1252')
+        self.patient_number_columnname = columnnames['patient_number_columnname']
+        self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding='cp1252')
         print("Before dropping duplicates", self.data.shape)
         self.data.columns = self.data.columns.str.upper()
         self.data = self.data.drop_duplicates()
@@ -46,7 +46,7 @@ class TonalAudiometry():
             self.data[self.date_column].dt.month.astype(str) + "-" +
             self.data[self.date_column].dt.day.astype(str)
         )
-        self.group_columns = [self.pesel_columnname] + ['date_year_month_day']
+        self.group_columns = [self.patient_number_columnname] + ['date_year_month_day']
 
         #mini_df for each patient and each examination
         self.mini_dfs = []
