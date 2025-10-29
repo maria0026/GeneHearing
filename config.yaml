@@ -34,7 +34,6 @@ audiometry_dropcolumns:
 match_columns:
   - "NUMER_HISTORII_CHOROBY"
   - "NUMER_W_JEDNOSTCE"
-  - "NUMER_HISTORII_CHOROBY"
 
 tonaldataname: audiometry_tonal
 verbaldataname: audiometry_verbal
@@ -45,7 +44,8 @@ description_columnname: "OPIS_BADANIA"
 audiometry_name_columnname: "NAZWA_AUDIOMETRII"
 audiometry_earside_columnname: "UWAGI_DO_AUDIOMETRII"
 audiometry_type_columnname: "TYP_AUDIOMETRII"
-pesel_columnname: "NUMER_HISTORII_CHOROBY"
+patient_number_columnname: "NUMER_HISTORII_CHOROBY"
+pesel_columnname: "PESEL"
 
 mask_merging_columns:
   - "NUMER_HISTORII_CHOROBY"
