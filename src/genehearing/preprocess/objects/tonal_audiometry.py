@@ -341,13 +341,16 @@ class TonalAudiometry():
                         for col, expected in conditions.items():
                             #jeśli wartość nie pasuje do oczekiwanego, nie dopasowujemy
                             if ear_row[col].item() != expected:
+                                if ear_row[col].item() == 'brak_obl':
+                                    self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
+                                    ear_assigned = True
                                 match = False
                                 break
                         if not match:
                             break
                     if match:
                         #przypisanie typu ubytku do wszystkich wierszy tego ucha
-                        indices = mini_df[mini_df['ear_side'] == ear].index
+                        indices = grouped['air'][grouped['air']['ear_side'] == ear].index
                         self.mini_dfs[i].loc[indices, 'hearing_type'] = loss_type
                         ear_assigned = True
                         break  #jeśli dopasowano typ, nie sprawdzaj innych
@@ -355,7 +358,7 @@ class TonalAudiometry():
                 if not ear_assigned:
                     #jeśli żaden typ nie pasuje, oznaczamy jako "nie określono"
                     indices = mini_df[mini_df['ear_side'] == ear].index
-                    self.mini_dfs[i].loc[indices, 'hearing_type'] = "nie okreslono"
+                    self.mini_dfs[i].loc[indices, 'hearing_type'] = "żaden typ nie pasuje"
 
 
     def save_processed_df(self, output_path):
