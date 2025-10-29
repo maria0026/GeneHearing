@@ -15,7 +15,8 @@ dependencies = [
     "scikit-learn",
     "statsmodels",
     "tqdm",
-    "numpy"
+    "numpy",
+    "pyyaml"
 ]
 
 [tool.setuptools.packages.find]
