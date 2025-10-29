@@ -1,4 +1,3 @@
-
 *.csv
 *.pyc
 venv
@@ -6,3 +5,5 @@ build
 *.csv#
 *.txt
 /src/genehearing.egg-info
+data
+.venv/
