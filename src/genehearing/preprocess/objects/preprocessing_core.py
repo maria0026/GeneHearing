@@ -1,7 +1,6 @@
 import pandas as pd
-import os
 
-class ExcelProcessor:
+class CSVProcessor:
     def __init__(self, path_audiometry, tonal_suffix, path_genetic, output_path,
                 match_column = "PESEL"):
         
@@ -14,9 +13,8 @@ class ExcelProcessor:
 
         
     def read_merge_genetic_audiometry(self):
-        print(self.data_audiometry)
-        print(self.data_genetic)
         self.merged = pd.merge(self.data_audiometry, self.data_genetic, how='left', on=self.match_column)
+
 
     def save_merged(self):
         self.merged.to_csv(f'{self.output_path}audiometry_{self.tonal_suffix}_genetic.csv', index=False)
