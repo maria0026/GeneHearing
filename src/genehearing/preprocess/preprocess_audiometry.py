@@ -6,7 +6,7 @@ def main():
     config = tools.load_config("config.yaml")
     tonaldataname=config["tonaldataname"]
     tonal_suffix = tonaldataname.split("_")[-1]
-    tonal_audiometry_datapath = config["datarawdirectory"] + tonaldataname + '.csv'
+    c = config["datarawdirectory"] + tonaldataname + '_' + config['genetic_name']+'.csv'
 
     tonal_audiometry_processor = TonalAudiometry(tonal_audiometry_datapath, 
                                                  tonal_suffix, 
@@ -43,9 +43,6 @@ def main():
 
 
     tonal_audiometry_processor.save_processed_df(config["dataprocesseddirectory"])
-
-    #tonal_audiometry_processor.select_better_air_pta()
-    #tonal_audiometry_processor.save_processed_to_mri_df(config["dataprocesseddirectory"])
 
 
 if __name__=="__main__":
