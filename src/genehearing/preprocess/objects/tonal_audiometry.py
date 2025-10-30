@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import numpy as np
 
 class TonalAudiometry():
     def __init__(self, 
@@ -40,7 +39,7 @@ class TonalAudiometry():
 
 
     def patients_dfs(self):
-        self.data[self.date_column] = pd.to_datetime(self.data[self.date_column])
+        self.data[self.date_column] = pd.to_datetime(self.data[self.date_column], format="%d.%m.%Y %H:%M")
         self.data['date_year_month_day'] = (
             self.data[self.date_column].dt.year.astype(str) + "-" +
             self.data[self.date_column].dt.month.astype(str) + "-" +
