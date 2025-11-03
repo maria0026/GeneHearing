@@ -9,7 +9,7 @@ def main():
     config = tools.load_config()
     tonaldataname=config["tonaldataname"]
     tonal_suffix = tonaldataname.split("_")[-1]
-    datapath = config["dataprocesseddirectory"] + tonaldataname + '_' + config['genetic_name']+'.csv'
+    datapath = config["dataprocesseddirectory"] + tonaldataname+'.csv'
 
 
     genehearing_analyser = GenehearingAnalyser(datapath, 
@@ -22,6 +22,13 @@ def main():
                                                             },
                                                 air_audiometry=config['air_audiometry'],
                                                 bone_audiometry=config['bone_audiometry'])
+    
+
+    genehearing_analyser.patients_dfs()
+    genehearing_analyser.choose_first_examination()
+    genehearing_analyser.save_processed_df(config["datacalculationsdirectory"])
+
+
 if __name__=="__main__":
 
     main()
