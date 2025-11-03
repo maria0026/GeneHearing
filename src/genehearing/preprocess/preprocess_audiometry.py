@@ -6,7 +6,7 @@ def main():
     config = tools.load_config("config.yaml")
     tonaldataname=config["tonaldataname"]
     tonal_suffix = tonaldataname.split("_")[-1]
-    c = config["datarawdirectory"] + tonaldataname + '_' + config['genetic_name']+'.csv'
+    tonal_audiometry_datapath = config["datarawdirectory"] + tonaldataname + '_' + config['genetic_name']+'.csv'
 
     tonal_audiometry_processor = TonalAudiometry(tonal_audiometry_datapath, 
                                                  tonal_suffix, 
