@@ -2,6 +2,7 @@
 datarawdirectory: data/raw/
 datainterimdirectory: data/interim/
 dataprocesseddirectory: data/processed/
+datacalculationsdirectory: data/calculations/
 dataname: export_all_tables
 mri_dataname: mri
 genetic_name: genetic
