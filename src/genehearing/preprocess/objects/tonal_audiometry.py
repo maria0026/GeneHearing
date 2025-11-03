@@ -362,6 +362,7 @@ class TonalAudiometry():
 
     def save_processed_df(self, output_path):
         merged_df = pd.concat(self.mini_dfs, ignore_index=True)
+        merged_df[self.date_column] = merged_df[self.date_column].dt.strftime("%d.%m.%Y %H:%M")
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         merged_df.to_csv(f'{output_path}audiometry_{self.tonal_suffix}.csv', index=False)
