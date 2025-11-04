@@ -6,6 +6,7 @@ datacalculationsdirectory: data/calculations/
 dataname: export_all_tables
 mri_dataname: mri
 genetic_name: genetic
+implants: implanty
 genetic_dataname_all: DFNB1_1620
 genetic_dataname: DFNB1_2025-10-10
 mapping: anon_mapping
@@ -41,6 +42,7 @@ tonaldataname: audiometry_tonal
 verbaldataname: audiometry_verbal
 freefielddataname: audiometry_free_field
 
+#tonal audiometry columns
 date_column: "DATA_BADANIA"
 description_columnname: "OPIS_BADANIA"
 audiometry_name_columnname: "NAZWA_AUDIOMETRII"
@@ -48,6 +50,15 @@ audiometry_earside_columnname: "UWAGI_DO_AUDIOMETRII"
 audiometry_type_columnname: "TYP_AUDIOMETRII"
 patient_number_columnname: "NUMER_HISTORII_CHOROBY"
 pesel_columnname: "PESEL"
+
+#implants columns
+patient_identifier_columnname: "PATID"
+age_of_occurence_columnname: "WIEK_WYSTAPIENIA"
+age_of_recognition_columnname: "WIEK_ROZPOZNANIA"
+implant_date_columnname: "1_IMPLANT_SLIMAKOWY_DATA_WSZCZEPIENIA"
+implant_ear_columnname: "1_IMPLANT_SLIMAKOWY_UCHO"
+second_implant_date_columnname: "2_IMPLANT_SLIMAKOWY_DATA WSZCZEPIENIA"
+second_implant_ear_columnname: "2_IMPLANT_SLIMAKOWY_UCHO"
 
 mask_merging_columns:
   - "NUMER_HISTORII_CHOROBY"
