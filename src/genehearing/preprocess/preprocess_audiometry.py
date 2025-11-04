@@ -7,22 +7,38 @@ def main():
     tonaldataname=config["tonaldataname"]
     tonal_suffix = tonaldataname.split("_")[-1]
     tonal_audiometry_datapath = config["datarawdirectory"] + tonaldataname + '_' + config['genetic_name']+'.csv'
+    implants_datapath = config["datarawdirectory"] + config['implants'] + '.csv'
+
 
     tonal_audiometry_processor = TonalAudiometry(tonal_audiometry_datapath, 
                                                  tonal_suffix, 
+                                                 implants_datapath,
                                                  columnnames={'patient_number_columnname': config["patient_number_columnname"],
                                                                 'audiometry_earside_columnname': config['audiometry_earside_columnname'],
                                                                 'date_column': config['date_column'],
                                                                 'type_column': config['audiometry_type_columnname'],
-                                                                'description_column': config['description_columnname']
+                                                                'description_column': config['description_columnname'],
+                                                                'genetic_patient_id_column': config['patient_identifier_columnname']
                                                                },
-                                                 air_audiometry=config['air_audiometry'],
+                                                 implant_columnnames={"patient_identifier_columnname": config['patient_identifier_columnname'],
+                                                                    'age_of_occurence_columnname': config['age_of_occurence_columnname'],
+                                                                    'age_of_recognition_columnname': config['age_of_recognition_columnname'],
+                                                                    'implant_date_columnname': config['implant_date_columnname'],
+                                                                    'implant_ear_columnname': config['implant_ear_columnname'],
+                                                                    'second_implant_date_columnname': config['second_implant_date_columnname'],
+                                                                    'second_implant_ear_columnname':  config['second_implant_ear_columnname']
+                                                                },
+                                                air_audiometry=config['air_audiometry'],
                                                  bone_audiometry=config['bone_audiometry']
                                                  )
+    tonal_audiometry_processor.merge_implants()
     tonal_audiometry_processor.filter_audiometry_type()
     tonal_audiometry_processor.patients_dfs()
     tonal_audiometry_processor.add_audiometry_group_and_ear_column()
     tonal_audiometry_processor.merge_masked()
+
+    tonal_audiometry_processor.mark_implanted_ear()
+    tonal_audiometry_processor.delete_implanted_ear()
 
     PTA2_columns = config["pta_columns"]["PTA2"]
     PTA4_columns = config["pta_columns"]["PTA4"]

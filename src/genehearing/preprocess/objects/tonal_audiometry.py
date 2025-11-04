@@ -5,7 +5,9 @@ class TonalAudiometry():
     def __init__(self, 
                   path, 
                   tonal_suffix,
+                  implants_datapath,
                   columnnames,
+                  implant_columnnames,
                   air_audiometry=["AirMask", "Air"],
                   bone_audiometry=["BoneMask", "Bone"]):
         
@@ -27,6 +29,21 @@ class TonalAudiometry():
         self.bone_audiometry = bone_audiometry
         self.ears = ['L', 'P']
 
+        self.path_implants = implants_datapath
+        self.genetic_patient_id_column = columnnames['genetic_patient_id_column']
+
+        self.implant_ear_columnname = implant_columnnames['implant_ear_columnname']
+        self.implant_date_columnname = implant_columnnames['implant_date_columnname']
+        self.implant_ear_second_columnname = implant_columnnames['second_implant_ear_columnname']
+        self.implant_date_second_columnname = implant_columnnames['second_implant_date_columnname']
+
+
+    def merge_implants(self):
+        implanty = pd.read_csv(self.path_implants, sep=None, engine='python', dtype={self.genetic_patient_id_column: str}, encoding='cp1252')
+        implanty.columns = implanty.columns.str.upper()
+        
+        self.data = pd.merge(self.data, implanty, how='left', on=self.genetic_patient_id_column)
+
 
     def filter_audiometry_type(self):
         #filter vibro
@@ -40,6 +57,18 @@ class TonalAudiometry():
 
     def patients_dfs(self):
         self.data[self.date_column] = pd.to_datetime(self.data[self.date_column], format="%d.%m.%Y %H:%M")
+        self.data[self.implant_date_columnname] = pd.to_datetime(
+            self.data[self.implant_date_columnname],
+            format="%m/%d/%Y",
+            errors='coerce'
+        )
+
+        self.data[self.implant_date_second_columnname] = pd.to_datetime(
+            self.data[self.implant_date_second_columnname],
+            format="%m/%d/%Y",
+            errors='coerce'
+        )
+        
         self.data['date_year_month_day'] = (
             self.data[self.date_column].dt.year.astype(str) + "-" +
             self.data[self.date_column].dt.month.astype(str) + "-" +
@@ -67,8 +96,8 @@ class TonalAudiometry():
         """Dodaje kolumnę GROUP do każdego mini_df."""
         for i, mini_df in enumerate(self.mini_dfs):
             mini_df["GROUP"] = mini_df[self.type_col].apply(self.assign_group)
-            mini_df['ear_side'] = mini_df[self.earside_col].str.extract(r"(lewego|prawego)")
-            mini_df['ear_side'] = mini_df['ear_side'].map({"lewego": "L", "prawego": "P"})
+            mini_df['EAR_SIDE'] = mini_df[self.earside_col].str.extract(r"(lewego|prawego)")
+            mini_df['EAR_SIDE'] = mini_df['EAR_SIDE'].map({"lewego": "L", "prawego": "P"})
 
 
     def keep_first_delete_second(self, df, ear, columnname, merged_row):
@@ -82,7 +111,7 @@ class TonalAudiometry():
 
 
     def merge_masked_by_ear(self, group, ear):
-        group = group[group['ear_side']== ear] #choose only one ear
+        group = group[group['EAR_SIDE']== ear] #choose only one ear
         if group.shape[0] == 2:
             group_to_keep = group
         elif group.shape[0] > 2:
@@ -97,7 +126,7 @@ class TonalAudiometry():
             return group
         
         merged_row = group_to_keep.iloc[0].combine_first(group_to_keep.iloc[1])
-        return self.keep_first_delete_second(group_to_keep, ear, 'ear_side', merged_row)
+        return self.keep_first_delete_second(group_to_keep, ear, 'EAR_SIDE', merged_row)
 
 
     def merge_masked(self):
@@ -112,6 +141,30 @@ class TonalAudiometry():
                 all_groups_df = pd.concat([all_groups_df, ear_dfs], axis=0) #merge bone and air audiometry
             self.mini_dfs[i] = all_groups_df
         print(f'Merging rows completed.')
+
+
+    def mark_implanted_ear(self):
+        for i, mini_df in enumerate(self.mini_dfs):
+            ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
+            for key, group in ears_grouped.items():
+                for ear in self.ears:
+                    indices = group[group['EAR_SIDE'] == ear].index
+                    if (group[self.implant_ear_columnname] == ear).any() and (group['EAR_SIDE']==ear).any():
+                        mask = group[self.date_column] > group[self.implant_date_columnname]
+                    elif (group[self.implant_ear_second_columnname] == ear).any() and (group['EAR_SIDE']==ear).any():
+                        mask = group[self.date_column] > group[self.implant_date_second_columnname]
+                    else:
+                        mask = False
+                    self.mini_dfs[i].loc[indices, 'PO_IMPLANTACJI'] = mask
+
+
+    def delete_implanted_ear(self):
+        cleaned = []
+        for mini_df in self.mini_dfs:
+            df = mini_df[mini_df['PO_IMPLANTACJI'] != True]
+            if not df.empty:
+                cleaned.append(df)
+        self.mini_dfs = cleaned
 
 
     def compute_diff(self, mini_df, columns, suffix='_diff'):
@@ -303,7 +356,7 @@ class TonalAudiometry():
 
     def hearing_type_differences_between_audiometries(self, first_opt_columns, threshold, how_many_values):
         for i, mini_df in enumerate(self.mini_dfs):
-            ears_grouped = {g: d for g, d in mini_df.groupby("ear_side")}
+            ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
             for key, group in ears_grouped.items():
                 diff_opt_1 = self.compute_diff(group, first_opt_columns, suffix="_diff_first_opt")
                 #diff_opt_2 = self.compute_diff(group, second_opt_columns, suffix="_diff_second_opt")
@@ -333,7 +386,7 @@ class TonalAudiometry():
                     match = True
                     for key, conditions in rules.items():
                         group = grouped[key]
-                        ear_row = group[group['ear_side'] == ear]
+                        ear_row = group[group['EAR_SIDE'] == ear]
                         if ear_row.empty:
                             match = False
                             break
@@ -349,15 +402,15 @@ class TonalAudiometry():
                             break
                     if match:
                         #przypisanie typu ubytku do wszystkich wierszy tego ucha
-                        indices = grouped['air'][grouped['air']['ear_side'] == ear].index
+                        indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index
                         self.mini_dfs[i].loc[indices, 'hearing_type'] = loss_type
                         ear_assigned = True
                         break  #jeśli dopasowano typ, nie sprawdzaj innych
 
                 if not ear_assigned:
                     #jeśli żaden typ nie pasuje, oznaczamy jako "nie określono"
-                    indices = mini_df[mini_df['ear_side'] == ear].index
-                    self.mini_dfs[i].loc[indices, 'hearing_type'] = "żaden typ nie pasuje"
+                    indices = mini_df[mini_df['EAR_SIDE'] == ear].index
+                    self.mini_dfs[i].loc[indices, 'hearing_type'] = "zaden typ nie pasuje"
 
 
     def save_processed_df(self, output_path):
