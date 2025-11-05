@@ -4,8 +4,8 @@ class CSVProcessor:
     def __init__(self, path_audiometry, tonal_suffix, path_genetic, output_path,
                 match_column = "PESEL"):
         
-        self.data_genetic = pd.read_csv(path_genetic, sep=None, engine='python', dtype={match_column: str}, encoding='cp1252')
-        self.data_audiometry = pd.read_csv(path_audiometry, sep=None, engine='python', dtype={match_column: str}, encoding='cp1252')
+        self.data_genetic = pd.read_csv(path_genetic, sep=None, engine='python', dtype={match_column: str}, encoding='cp1250')
+        self.data_audiometry = pd.read_csv(path_audiometry, sep=None, engine='python', dtype={match_column: str}, encoding='cp1250')
         self.match_column = match_column
         self.output_path = output_path
         
@@ -18,6 +18,6 @@ class CSVProcessor:
 
 
     def save_merged(self):
-        self.merged.to_csv(f'{self.output_path}audiometry_{self.tonal_suffix}_genetic.csv', index=False)
+        self.merged.to_csv(f'{self.output_path}audiometry_{self.tonal_suffix}_genetic.csv', index=False, encoding='utf-8-sig')
 
 

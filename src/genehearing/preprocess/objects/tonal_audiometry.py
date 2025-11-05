@@ -13,7 +13,7 @@ class TonalAudiometry():
         
 
         self.patient_number_columnname = columnnames['patient_number_columnname']
-        self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding='cp1252')
+        self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding='utf-8-sig')
         print("Before dropping duplicates", self.data.shape)
         self.data.columns = self.data.columns.str.upper()
         self.data = self.data.drop_duplicates()
@@ -39,7 +39,7 @@ class TonalAudiometry():
 
 
     def merge_implants(self):
-        implanty = pd.read_csv(self.path_implants, sep=None, engine='python', dtype={self.genetic_patient_id_column: str}, encoding='cp1252')
+        implanty = pd.read_csv(self.path_implants, sep=None, engine='python', dtype={self.genetic_patient_id_column: str}, encoding='cp1250')
         implanty.columns = implanty.columns.str.upper()
         
         self.data = pd.merge(self.data, implanty, how='left', on=self.genetic_patient_id_column)
@@ -146,22 +146,42 @@ class TonalAudiometry():
     def mark_implanted_ear(self):
         for i, mini_df in enumerate(self.mini_dfs):
             ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
-            for key, group in ears_grouped.items():
-                for ear in self.ears:
-                    indices = group[group['EAR_SIDE'] == ear].index
-                    if (group[self.implant_ear_columnname] == ear).any() and (group['EAR_SIDE']==ear).any():
-                        mask = group[self.date_column] > group[self.implant_date_columnname]
-                    elif (group[self.implant_ear_second_columnname] == ear).any() and (group['EAR_SIDE']==ear).any():
-                        mask = group[self.date_column] > group[self.implant_date_second_columnname]
-                    else:
-                        mask = False
+            implanted_ears = set()
+            
+            for ear in self.ears:
+                if ear not in ears_grouped:
+                    continue
+
+                group = ears_grouped[ear]
+                indices = group.index
+                indices_other = mini_df[mini_df["EAR_SIDE"] != ear].index
+
+                implanted = False
+                if (group[self.implant_ear_columnname] == ear).any():
+                    implanted = True
+                    mask = group[self.date_column] > group[self.implant_date_columnname]
+                elif (group[self.implant_ear_second_columnname] == ear).any():
+                    implanted = True
+                    mask = group[self.date_column] > group[self.implant_date_second_columnname]
+                else:
+                    mask = False
+
+                if implanted and len(implanted_ears) == 0:
+                    self.mini_dfs[i].loc[indices_other, 'PO_IMPLANTACJI'] = 'drugie_implantowane'
                     self.mini_dfs[i].loc[indices, 'PO_IMPLANTACJI'] = mask
+                elif len(implanted_ears) > 0 and not implanted:
+                    pass
+                else:
+                    self.mini_dfs[i].loc[indices, 'PO_IMPLANTACJI'] = mask
+                    
+                if implanted:
+                    implanted_ears.add(ear)
 
 
     def delete_implanted_ear(self):
         cleaned = []
         for mini_df in self.mini_dfs:
-            df = mini_df[mini_df['PO_IMPLANTACJI'] != True]
+            df = mini_df[~(mini_df['PO_IMPLANTACJI'] == True)]
             if not df.empty:
                 cleaned.append(df)
         self.mini_dfs = cleaned

@@ -38,7 +38,7 @@ def main():
     tonal_audiometry_processor.merge_masked()
 
     tonal_audiometry_processor.mark_implanted_ear()
-    tonal_audiometry_processor.delete_implanted_ear()
+    #tonal_audiometry_processor.delete_implanted_ear()
 
     PTA2_columns = config["pta_columns"]["PTA2"]
     PTA4_columns = config["pta_columns"]["PTA4"]
