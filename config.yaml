@@ -129,6 +129,10 @@ bone_all_mean_columns:
   - "WYNIK_X_2000"
   - "WYNIK_X_4000"
 
+bone_hf_all_mean_columns:
+  - "WYNIK_X_4000"
+  - "WYNIK_X_6000"
+
 first_opt_columns:
   - "WYNIK_X_250"
   - "WYNIK_X_500"
@@ -148,14 +152,14 @@ hearing_loss_criteria:
   Sluch_prawidlowy:
     air:
       PTA4_condition: 1
-      first_option_zero_diff: 1
+      REZERWA: 0
     bone:
       bone_mean_condition: 1
 
   Niedosluch_przewodzeniowy:
     air:
       PTA4_condition: 0
-      first_option_10_diff: 1
+      REZERWA: 1
     bone:
       bone_mean_condition: 1
 
@@ -163,13 +167,14 @@ hearing_loss_criteria:
     air:
       PTA4_condition: 0
       hfPTA_condition: 0
-      first_option_zero_diff: 1
+      REZERWA: 0
     bone:
       bone_mean_condition: 0
+      bone_mean_condition_hf: 0
 
   Niedosluch_mieszany:
     air:
       PTA4_condition: 0
-      first_option_10_diff: 1
+      REZERWA: 1
     bone:
       bone_mean_condition: 0

@@ -154,11 +154,13 @@ class TonalAudiometry():
 
                 implanted = False
                 if (group[self.implant_ear_columnname] == ear).any():
-                    implanted = True
                     mask = group[self.date_column] > group[self.implant_date_columnname]
+                    if mask.all():
+                        implanted = True
                 elif (group[self.implant_ear_second_columnname] == ear).any():
-                    implanted = True
                     mask = group[self.date_column] > group[self.implant_date_second_columnname]
+                    if mask.all():
+                        implanted = True
                 else:
                     mask = False
 
@@ -330,7 +332,7 @@ class TonalAudiometry():
         return group
 
 
-    def hearing_type_pta_and_bone_audiometry(self, threshold, bone_mean_columns):
+    def hearing_type_pta_and_bone_audiometry(self, threshold, bone_mean_columns, bone_hf_mean_columns):
         for i, mini_df in enumerate(self.mini_dfs):
             mini_df = self.hearing_loss_type_cond1(mini_df, threshold)
             grouped = {g: d for g, d in mini_df.groupby("GROUP")}
@@ -339,6 +341,9 @@ class TonalAudiometry():
                     group = self.hearing_loss_type_cond2(group, bone_mean_columns, threshold)
                     self.mini_dfs[i]['bone_mean'] = group['bone_mean']
                     self.mini_dfs[i]['bone_mean_condition'] = group['bone_mean_condition']
+                    group = self.hearing_loss_type_cond2(group, bone_hf_mean_columns, threshold)
+                    self.mini_dfs[i]['bone_mean_hf'] = group['bone_mean']
+                    self.mini_dfs[i]['bone_mean_condition_hf'] = group['bone_mean_condition']
 
 
     def check_differences_opt1_zero(self, diff_df, value = 0, expected_length=4):
@@ -380,7 +385,7 @@ class TonalAudiometry():
                 group['first_option_zero_diff'] = self.check_differences_opt1_zero(diff_opt_1, value=0, expected_length=len(first_opt_columns))
                 group[f'first_option_{threshold}_diff'] = self.check_differences_opt1(diff_opt_1, threshold=threshold, how_many=how_many_values, expected_length=len(first_opt_columns))
                 self.mini_dfs[i].loc[group.index, 'first_option_zero_diff'] = group['first_option_zero_diff'].astype('object')
-                self.mini_dfs[i].loc[group.index, f'first_option_{threshold}_diff'] = group[f'first_option_{threshold}_diff'].astype('object')
+                self.mini_dfs[i].loc[group.index, f'REZERWA'] = group[f'first_option_{threshold}_diff'].astype('object')
 
                 if not diff_opt_1.empty:
                     for col in diff_opt_1.columns:
@@ -409,9 +414,9 @@ class TonalAudiometry():
                         for col, expected in conditions.items():
                             #jeśli wartość nie pasuje do oczekiwanego, nie dopasowujemy
                             if ear_row[col].item() != expected:
-                                if ear_row[col].item() == 'brak_obl':
-                                    self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
-                                    ear_assigned = True
+                                #if ear_row[col].item() == 'brak_obl':
+                                    #self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
+                                    #ear_assigned = True
                                 match = False
                                 break
                         if not match:
@@ -434,7 +439,7 @@ class TonalAudiometry():
         merged_df[self.date_column] = merged_df[self.date_column].dt.strftime("%d.%m.%Y %H:%M")
         if not os.path.exists(output_path):
             os.makedirs(output_path)
-        merged_df.to_csv(f'{output_path}audiometry_{self.tonal_suffix}.csv', index=False)
+        merged_df.to_csv(f'{output_path}audiometry_{self.tonal_suffix}.csv', index=False, sep=";", encoding="utf-8-sig")
         print(f'Saving to {output_path}audiometry_{self.tonal_suffix}.csv completed.')
 
 
