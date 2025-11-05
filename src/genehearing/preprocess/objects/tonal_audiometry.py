@@ -69,11 +69,7 @@ class TonalAudiometry():
             errors='coerce'
         )
         
-        self.data['date_year_month_day'] = (
-            self.data[self.date_column].dt.year.astype(str) + "-" +
-            self.data[self.date_column].dt.month.astype(str) + "-" +
-            self.data[self.date_column].dt.day.astype(str)
-        )
+        self.data['date_year_month_day'] = self.data[self.date_column].dt.date
         self.group_columns = [self.patient_number_columnname] + ['date_year_month_day']
 
         #mini_df for each patient and each examination
