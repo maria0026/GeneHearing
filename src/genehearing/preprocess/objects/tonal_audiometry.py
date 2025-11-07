@@ -432,12 +432,14 @@ class TonalAudiometry():
                             break
                         for col, expected in conditions.items():
                             #jeśli wartość nie pasuje do oczekiwanego, nie dopasowujemy
-                            if ear_row[col].item() != expected:
-                                #if ear_row[col].item() == 'brak_obl':
-                                    #self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
-                                    #ear_assigned = True
-                                match = False
-                                break
+                            if ear_row[col].item() != 'brak_obl':
+                                if ear_row[col].item() != expected:
+                                    #if ear_row[col].item() == 'brak_obl':
+                                        #self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
+                                        #ear_assigned = True
+                                    match = False
+                                    break
+
                         if not match:
                             break
                     if match:
