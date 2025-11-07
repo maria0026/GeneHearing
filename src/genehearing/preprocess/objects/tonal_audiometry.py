@@ -325,7 +325,7 @@ class TonalAudiometry():
         group['bone_mean_condition'] = pd.Series(dtype='object')
 
         for idx, row in group.iterrows():
-            if row[bone_mean_columns].isna().any():
+            if row[bone_mean_columns].isna().all():
                 group.loc[idx, 'bone_mean'] = "brak_obl"
                 group.loc[idx, 'bone_mean_condition'] = "brak_obl"
             else:
@@ -432,16 +432,12 @@ class TonalAudiometry():
                             break
                         for col, expected in conditions.items():
                             #jeśli wartość nie pasuje do oczekiwanego, nie dopasowujemy
-                            if ear_row[col].item() != 'brak_obl':
-                                if ear_row[col].item() != expected:
+                            #if ear_row[col].item() != 'brak_obl':
+                            if ear_row[col].item() != expected:
                                     #if ear_row[col].item() == 'brak_obl':
                                         #self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
                                         #ear_assigned = True
-                                    match = False
-                                    break
-
-                        if not match:
-                            break
+                                match = False
                     if match:
                         #przypisanie typu ubytku do wszystkich wierszy tego ucha
                         indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index
