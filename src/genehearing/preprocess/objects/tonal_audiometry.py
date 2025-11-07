@@ -121,8 +121,11 @@ class TonalAudiometry():
         else:
             return group
         
-        merged_row = group_to_keep.iloc[0].combine_first(group_to_keep.iloc[1])
-        return self.keep_first_delete_second(group_to_keep, ear, 'EAR_SIDE', merged_row)
+        if group_to_keep.shape[0] > 2:
+            merged_row = group_to_keep.iloc[0].combine_first(group_to_keep.iloc[1])
+            return self.keep_first_delete_second(group_to_keep, ear, 'EAR_SIDE', merged_row)
+        else:
+            return group_to_keep
 
 
     def merge_masked(self):
