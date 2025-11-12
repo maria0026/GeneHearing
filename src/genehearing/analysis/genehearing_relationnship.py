@@ -28,7 +28,8 @@ def main():
                                                                 'second_implant_ear_columnname':  config['second_implant_ear_columnname']
                                                             },
                                                 air_audiometry=config['air_audiometry'],
-                                                bone_audiometry=config['bone_audiometry'])
+                                                bone_audiometry=config['bone_audiometry'],
+                                                vibro_audiometry=config['vibro_audiometry'])
     
 
     genehearing_analyser.patients_dfs()

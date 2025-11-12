@@ -29,7 +29,8 @@ def main():
                                                                     'second_implant_ear_columnname':  config['second_implant_ear_columnname']
                                                                 },
                                                 air_audiometry=config['air_audiometry'],
-                                                 bone_audiometry=config['bone_audiometry']
+                                                bone_audiometry=config['bone_audiometry'],
+                                                vibro_audiometry=config['vibro_audiometry']
                                                  )
     tonal_audiometry_processor.merge_implants()
     tonal_audiometry_processor.filter_audiometry_type()
@@ -37,6 +38,7 @@ def main():
     tonal_audiometry_processor.add_audiometry_group_and_ear_column()
     tonal_audiometry_processor.merge_masked()
 
+    tonal_audiometry_processor.fill_ending_values(columns_to_fill=config["columns_to_fill"])
     tonal_audiometry_processor.mark_implanted_ear()
     #tonal_audiometry_processor.delete_implanted_ear()
 

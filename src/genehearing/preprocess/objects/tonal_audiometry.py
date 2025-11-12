@@ -10,7 +10,8 @@ class TonalAudiometry():
                   columnnames,
                   implant_columnnames,
                   air_audiometry=["AirMask", "Air"],
-                  bone_audiometry=["BoneMask", "Bone"]):
+                  bone_audiometry=["BoneMask", "Bone"],
+                  vibro_audiometry=["Vibro", "VibroMask"]):
         
 
         self.patient_number_columnname = columnnames['patient_number_columnname']
@@ -28,6 +29,7 @@ class TonalAudiometry():
         self.tonal_suffix = tonal_suffix
         self.air_audiometry = air_audiometry
         self.bone_audiometry = bone_audiometry
+        self.vibro_audiometry = vibro_audiometry
         self.ears = ['L', 'P']
 
         self.path_implants = implants_datapath
@@ -48,16 +50,24 @@ class TonalAudiometry():
 
     def filter_audiometry_type(self):
         #filter vibro
-        self.data = self.data[~self.data[self.type_col].str.contains("Vibro", na=False)]
-        self.data = self.data[~self.data[self.type_col].str.contains("VibroMask", na=False)]
+        #self.data = self.data[~self.data[self.type_col].str.contains("Vibro", na=False)]
+        #self.data = self.data[~self.data[self.type_col].str.contains("VibroMask", na=False)]
+        self.data = self.data[self.data[self.description_col].isna() | (self.data[self.description_col] == "")]
         self.data = self.data[~self.data[self.type_col].str.contains("szumy", na=False)]
         self.data = self.data[~self.data[self.type_col].str.contains("AirErr", na=False)]
         self.data = self.data[~self.data[self.type_col].str.contains("bez aparatu, szumy", na=False)]
         self.data = self.data[~self.data[self.type_col].str.contains("UCL", na=False)]
 
 
+    def parse_date(self, x):
+        try:
+            return pd.to_datetime(x, format="%d.%m.%Y %H:%M")
+        except ValueError:
+            return pd.to_datetime(x, format="%Y-%m-%d %H:%M:%S")
+
+
     def patients_dfs(self):
-        self.data[self.date_column] = pd.to_datetime(self.data[self.date_column], format="%d.%m.%Y %H:%M")
+        self.data[self.date_column] = self.data[self.date_column].apply(self.parse_date)
         self.data[self.implant_date_columnname] = pd.to_datetime(
             self.data[self.implant_date_columnname],
             format="%m/%d/%Y",
@@ -87,6 +97,8 @@ class TonalAudiometry():
             return "air"
         elif typ in self.bone_audiometry:
             return "bone"   
+        elif typ in self.vibro_audiometry:
+            return "vibro"
         
 
     def add_audiometry_group_and_ear_column(self):
@@ -99,11 +111,9 @@ class TonalAudiometry():
 
     def keep_first_delete_second(self, df, ear, columnname, merged_row):
         idx_first = df[df[columnname] == ear].index[0]
-        #idx_second = df[df[columnname] == ear].index[1]
         #update values with merged from masking and not masking
         df.loc[idx_first] = merged_row
         #delete second row
-        #return df.loc[~df.index.isin([idx_second])]
         return df.loc[[idx_first]]
 
 
@@ -142,6 +152,31 @@ class TonalAudiometry():
             self.mini_dfs[i] = all_groups_df
         print(f'Merging rows completed.')
 
+
+    def fill_ending_values(self, columns_to_fill):
+        valid_mini_dfs = [] 
+        for i, mini_df in enumerate(self.mini_dfs):
+            ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
+            for key, group in ears_grouped.items():
+                audiometry_type_grouped = {g: d for g, d in group.groupby("GROUP")}
+                bone_df = audiometry_type_grouped.get('bone')
+                air_df = audiometry_type_grouped.get('air')
+                vibro_df = audiometry_type_grouped.get('vibro')
+
+
+                if (air_df is None) and (vibro_df is not None):
+                    air_df[columns_to_fill] = 125
+                    #dok
+                    
+                if (bone_df is None) and (vibro_df is not None):
+                    print("Filling values")
+                    #dok
+                else:
+                    print(f"[Info] Skipping mini_df {i}: no 'air' group found.")
+                    continue
+
+            valid_mini_dfs.append(mini_df)
+        self.mini_dfs = valid_mini_dfs
 
     def mark_implanted_ear(self):
         for i, mini_df in enumerate(self.mini_dfs):
@@ -187,6 +222,8 @@ class TonalAudiometry():
             if not df.empty:
                 cleaned.append(df)
         self.mini_dfs = cleaned
+
+    
 
 
     def compute_diff(self, mini_df, columns, suffix='_diff'):
@@ -253,12 +290,19 @@ class TonalAudiometry():
                     self.mini_dfs[i]['SYMETRIA'] = group['SYMETRIA']
 
 
+
     def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, hf_columns):
         numeric_cols = PTA2_columns + PTA4_columns + hf_columns
         text_cols = [col for col in self.data.columns if col not in numeric_cols]
+        #valid_mini_dfs = [] 
 
         for i, mini_df in enumerate(self.mini_dfs):
             grouped = {g: d for g, d in mini_df.groupby("GROUP")} #group by air and bone
+
+            if "air" not in grouped:
+                print(f"[Info] Skipping mini_df {i}: no 'air' group found.")
+                continue
+
             for key, group in grouped.items():
                 if key == "air": #calculate only for air audiometry
                     sym = grouped["air"].iloc[0]['SYMETRIA'] #symmetry condition
@@ -283,6 +327,8 @@ class TonalAudiometry():
                     self.mini_dfs[i]['PTA2'] = group['PTA2']
                     self.mini_dfs[i]['PTA4'] = group['PTA4']
                     self.mini_dfs[i]['hfPTA'] = group['hfPTA']
+                    #valid_mini_dfs.append(mini_df)
+        #self.mini_dfs = valid_mini_dfs
         print('PTA calculation completed.')
 
 
@@ -348,6 +394,10 @@ class TonalAudiometry():
                     group = self.hearing_loss_type_cond2(group, bone_hf_mean_columns, threshold)
                     self.mini_dfs[i]['bone_mean_hf'] = group['bone_mean']
                     self.mini_dfs[i]['bone_mean_condition_hf'] = group['bone_mean_condition']
+                    continue
+                elif key == "vibro":
+                    self.mini_dfs[i].loc[group.index, 'bone_mean_condition'] = 0
+                    self.mini_dfs[i].loc[group.index, 'bone_mean_condition_hf'] = 0
 
 
     def check_differences_opt1_zero(self, diff_df, value = 0, expected_length=4):
@@ -384,13 +434,21 @@ class TonalAudiometry():
         for i, mini_df in enumerate(self.mini_dfs):
             ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
             for key, group in ears_grouped.items():
-                diff_opt_1 = self.compute_diff(group, first_opt_columns, suffix="_diff_first_opt")
-                #diff_opt_2 = self.compute_diff(group, second_opt_columns, suffix="_diff_second_opt")
+                audiometry_type_grouped = {g: d for g, d in group.groupby("GROUP")}
+                bone_df = audiometry_type_grouped.get('bone')
+                air_df = audiometry_type_grouped.get('air')
+                vibro_df = audiometry_type_grouped.get('vibro')
 
-                group['first_option_zero_diff'] = self.check_differences_opt1_zero(diff_opt_1, value=0, expected_length=len(first_opt_columns))
+                frames = [df for df in [bone_df, air_df] if df is not None]
+
+                if frames:
+                    bone_air_df = pd.concat(frames, ignore_index=True)
+
+                diff_opt_1 = self.compute_diff(bone_air_df, first_opt_columns, suffix="_diff_first_opt")
+
                 group[f'first_option_{threshold}_diff'] = self.check_differences_opt1(diff_opt_1, threshold=threshold, how_many=how_many_values, expected_length=len(first_opt_columns))
                 group[f'15_diff'] = self.check_differences_opt1(diff_opt_1, threshold=15, how_many=1, expected_length=1)
-                self.mini_dfs[i].loc[group.index, 'first_option_zero_diff'] = group['first_option_zero_diff'].astype('object')
+
                 self.mini_dfs[i].loc[group.index, f'first_option_{threshold}_diff'] = group[f'first_option_{threshold}_diff'].astype('object')
                 self.mini_dfs[i].loc[group.index, f'15_diff'] = group[f'15_diff'].astype('object')
 
@@ -404,6 +462,9 @@ class TonalAudiometry():
                         0                              #w pozostałych przypadkach → 0
                     )
                 )
+                if np.isnan(rezerwa).any() and vibro_df is not None:
+                    rezerwa = np.nan_to_num(rezerwa, nan=0) 
+
                 self.mini_dfs[i].loc[group.index, 'REZERWA'] = pd.Series(rezerwa, index=group.index).replace({np.nan: "brak_obl"})
 
                 if not diff_opt_1.empty:
@@ -416,7 +477,7 @@ class TonalAudiometry():
         for i, mini_df in enumerate(self.mini_dfs):
             grouped = {g: d for g, d in mini_df.groupby("GROUP")}
             #jeśli nie ma dwóch grup (air + bone), nie określamy typu
-            if len(grouped) != 2:
+            if len(grouped) < 2:
                 self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
                 continue
 
@@ -425,19 +486,24 @@ class TonalAudiometry():
                 for loss_type, rules in criteria.items():
                     match = True
                     for key, conditions in rules.items():
-                        group = grouped[key]
+
+                        try:
+                            group = grouped[key]
+                        except KeyError:
+                            #print(f"[INFO] Brak grupy '{key}' w danych, pomijam.")
+                            match = False
+                            break
+
                         ear_row = group[group['EAR_SIDE'] == ear]
+
                         if ear_row.empty:
                             match = False
                             break
+
                         for col, expected in conditions.items():
-                            #jeśli wartość nie pasuje do oczekiwanego, nie dopasowujemy
-                            #if ear_row[col].item() != 'brak_obl':
                             if ear_row[col].item() != expected:
-                                    #if ear_row[col].item() == 'brak_obl':
-                                        #self.mini_dfs[i].loc[:, 'hearing_type'] = "nie okreslono"
-                                        #ear_assigned = True
                                 match = False
+
                     if match:
                         #przypisanie typu ubytku do wszystkich wierszy tego ucha
                         indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index

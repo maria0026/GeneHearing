@@ -66,6 +66,20 @@ mask_merging_columns:
 
 bone_audiometry: ["BoneMask", "Bone"]
 air_audiometry: ["AirMask", "Air"]
+vibro_audiometry: ['VibroMask', 'Vibro']
+
+columns_to_fill:
+  - WYNIK_X_125
+  - WYNIK_X_250
+  - WYNIK_X_500
+  - WYNIK_X_750
+  - WYNIK_X_1000
+  - WYNIK_X_1500
+  - WYNIK_X_2000
+  - WYNIK_X_3000
+  - WYNIK_X_4000
+  - WYNIK_X_6000
+  - WYNIK_X_8000
 
 pta_columns:
   PTA2:
@@ -163,18 +177,32 @@ hearing_loss_criteria:
     bone:
       bone_mean_condition: 1
 
-  Niedosluch_odbiorczy:
+  Niedosluch_odbiorczy_1:
     air:
       PTA4_condition: 0
       REZERWA: 0
     bone:
       bone_mean_condition: 0
 
-  Niedosluch_odbiorczy:
+  Niedosluch_odbiorczy_2:
     air:
       hfPTA_condition: 0
       REZERWA: 0
     bone:
+      bone_mean_condition_hf: 0
+    
+  Niedosluch_odbiorczy_3:
+    air:
+      PTA4_condition: 0
+      REZERWA: 0
+    vibro:
+      bone_mean_condition: 0
+
+  Niedosluch_odbiorczy_4:
+    air:
+      hfPTA_condition: 0
+      REZERWA: 0
+    vibro:
       bone_mean_condition_hf: 0
 
   Niedosluch_mieszany:
