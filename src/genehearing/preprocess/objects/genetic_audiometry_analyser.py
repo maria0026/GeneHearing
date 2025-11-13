@@ -8,8 +8,9 @@ class GenehearingAnalyser(TonalAudiometry):
                   columnnames,
                   implant_columnnames,
                   air_audiometry=["AirMask", "Air"],
-                  bone_audiometry=["BoneMask", "Bone"]):
-            super().__init__(path, tonal_suffix, implants_datapath, columnnames, implant_columnnames, air_audiometry, bone_audiometry)
+                  bone_audiometry=["BoneMask", "Bone"],
+                  vibro_audiometry=["Vibro", "VibroMask"]):
+            super().__init__(path, tonal_suffix, implants_datapath, columnnames, implant_columnnames, air_audiometry, bone_audiometry, vibro_audiometry)
 
         def choose_first_examination(self):
             id = 0

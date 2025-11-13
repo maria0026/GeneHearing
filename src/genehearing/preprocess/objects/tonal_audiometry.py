@@ -153,6 +153,53 @@ class TonalAudiometry():
         print(f'Merging rows completed.')
 
 
+    def create_air_audiometry(self, group, columns_to_fill):
+        last_row = group.iloc[-1].copy()
+        last_row[columns_to_fill] = 125
+        last_row[self.type_col] = 'Air'
+        last_row["GROUP"] = 'air'
+        return last_row
+
+
+    def find_last_existing_value(self, air_df, columns_to_fill):
+        filled_last = 0
+        for i, column in enumerate(columns_to_fill):
+            if air_df[column].notna().any():
+                filled = True
+            else:
+                filled = False
+
+            if filled:
+                filled_last = i
+
+        return filled_last
+
+
+    def fill_air_audiometry(self, air_df, columns_to_fill):
+        filled_previous = False
+        filled = False
+        fill = False
+
+        filled_last = self.find_last_existing_value(air_df, columns_to_fill)
+
+        for i, column in enumerate(columns_to_fill):
+            if air_df[column].notna().any():
+                filled = True
+            else:
+                filled = False
+
+            if (filled is False) and (filled_previous is True) and (i>filled_last):
+                air_df[column] = 125
+                fill = True
+                
+            elif fill:
+                air_df[column] = 125
+
+            filled_previous = filled
+
+        return air_df
+
+
     def fill_ending_values(self, columns_to_fill):
         valid_mini_dfs = [] 
         for i, mini_df in enumerate(self.mini_dfs):
@@ -163,20 +210,20 @@ class TonalAudiometry():
                 air_df = audiometry_type_grouped.get('air')
                 vibro_df = audiometry_type_grouped.get('vibro')
 
-
                 if (air_df is None) and (vibro_df is not None):
-                    air_df[columns_to_fill] = 125
-                    #dok
+                    last_row = self.create_air_audiometry(group, columns_to_fill)
+                    group = pd.concat([group, pd.DataFrame([last_row])], ignore_index=True)
                     
-                if (bone_df is None) and (vibro_df is not None):
-                    print("Filling values")
-                    #dok
-                else:
-                    print(f"[Info] Skipping mini_df {i}: no 'air' group found.")
-                    continue
+                elif (bone_df is None) and (vibro_df is not None):
+                    air_df = self.fill_air_audiometry(air_df, columns_to_fill)
+                    group.loc[air_df.index, :] = air_df
 
+                ears_grouped[key] = group 
+
+            mini_df = pd.concat(ears_grouped.values(), ignore_index=True)       
             valid_mini_dfs.append(mini_df)
         self.mini_dfs = valid_mini_dfs
+
 
     def mark_implanted_ear(self):
         for i, mini_df in enumerate(self.mini_dfs):
