@@ -7,7 +7,7 @@ dataname: export_all_tables
 mri_dataname: mri
 genetic_name: genetic
 implants: implanty
-genetic_dataname_all: DFNB1_1620
+genetic_dataname_all: DFNB1_1614
 genetic_dataname: DFNB1_2025-10-10
 mapping: anon_mapping
 resultsdirectory: results/
