@@ -162,7 +162,7 @@ class TonalAudiometry():
 
 
     def find_last_existing_value(self, air_df, columns_to_fill):
-        filled_last = 0
+        filled_last_idx = 0
         for i, column in enumerate(columns_to_fill):
             if air_df[column].notna().any():
                 filled = True
@@ -170,37 +170,39 @@ class TonalAudiometry():
                 filled = False
 
             if filled:
-                filled_last = i
+                filled_last_idx = i
+                filled_last_value = air_df.loc[air_df.index[0], column]
 
-        return filled_last
+        return filled_last_idx, filled_last_value
 
 
-    def fill_air_audiometry(self, air_df, columns_to_fill):
+    def fill_air_audiometry(self, air_df, columns_to_fill, filled_last_idx, vibro, filled_last_value=None, filling_limit=110):
         filled_previous = False
         filled = False
         fill = False
 
-        filled_last = self.find_last_existing_value(air_df, columns_to_fill)
+        if (not vibro) and (filled_last_value < filling_limit):
+                return air_df
+        else:
+            for i, column in enumerate(columns_to_fill):
+                if air_df[column].notna().any():
+                    filled = True
+                else:
+                    filled = False
 
-        for i, column in enumerate(columns_to_fill):
-            if air_df[column].notna().any():
-                filled = True
-            else:
-                filled = False
+                if (filled is False) and (filled_previous is True) and (i>filled_last_idx):
+                    air_df[column] = 125
+                    fill = True
+                    
+                elif fill:
+                    air_df[column] = 125
 
-            if (filled is False) and (filled_previous is True) and (i>filled_last):
-                air_df[column] = 125
-                fill = True
-                
-            elif fill:
-                air_df[column] = 125
+                filled_previous = filled
 
-            filled_previous = filled
-
-        return air_df
+            return air_df
 
 
-    def fill_ending_values(self, columns_to_fill):
+    def fill_ending_values(self, columns_to_fill, filling_limit):
         valid_mini_dfs = [] 
         for i, mini_df in enumerate(self.mini_dfs):
             ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
@@ -215,7 +217,15 @@ class TonalAudiometry():
                     group = pd.concat([group, pd.DataFrame([last_row])], ignore_index=True)
                     
                 elif (bone_df is None) and (vibro_df is not None):
-                    air_df = self.fill_air_audiometry(air_df, columns_to_fill)
+                    filled_last_idx, _ = self.find_last_existing_value(air_df, columns_to_fill)
+                    air_df = self.fill_air_audiometry(air_df, columns_to_fill=columns_to_fill, filled_last_idx=filled_last_idx, vibro=True)
+                    group.loc[air_df.index, :] = air_df
+                elif (air_df is None):
+                    group=None
+                    continue
+                else:
+                    filled_last_idx, filled_last_value = self.find_last_existing_value(air_df, columns_to_fill)
+                    air_df = self.fill_air_audiometry(air_df, columns_to_fill=columns_to_fill, filled_last_idx=filled_last_idx, vibro=False, filled_last_value=filled_last_value, filling_limit=filling_limit)
                     group.loc[air_df.index, :] = air_df
 
                 ears_grouped[key] = group 
@@ -271,8 +281,6 @@ class TonalAudiometry():
         self.mini_dfs = cleaned
 
     
-
-
     def compute_diff(self, mini_df, columns, suffix='_diff'):
         diff = mini_df[columns].diff().iloc[1:]  # bierzemy tylko drugi wiersz
         diff.columns = [col + suffix for col in columns]

@@ -38,7 +38,7 @@ def main():
     tonal_audiometry_processor.add_audiometry_group_and_ear_column()
     tonal_audiometry_processor.merge_masked()
 
-    tonal_audiometry_processor.fill_ending_values(columns_to_fill=config["columns_to_fill"])
+    tonal_audiometry_processor.fill_ending_values(config["columns_to_fill"], config['filling_limit'])
     tonal_audiometry_processor.mark_implanted_ear()
     #tonal_audiometry_processor.delete_implanted_ear()
 
