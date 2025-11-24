@@ -15,6 +15,7 @@ def main():
                                               output_path=config["datarawdirectory"], 
                                               match_column=config['pesel_columnname']) 
     tonal_audiometry_processor.read_merge_genetic_audiometry()
+    tonal_audiometry_processor.decode_sex()
     tonal_audiometry_processor.save_merged()
 
 

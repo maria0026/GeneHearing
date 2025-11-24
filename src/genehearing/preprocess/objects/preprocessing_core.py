@@ -17,6 +17,18 @@ class CSVProcessor:
         self.merged = self.merged.loc[:, ~self.merged.columns.str.contains('^Unnamed')]
 
 
+    def translate_number_to_sex(self, number):
+        if int(number) % 2 == 0:
+            return 'K'
+        else:
+            return 'M'
+        
+    def decode_sex(self):
+        self.merged['PESEL_PRZEDOSTATNIA'] = self.merged['PESEL'].astype(str).str[-2]
+        self.merged['sex'] = self.merged['PESEL_PRZEDOSTATNIA'].apply(self.translate_number_to_sex)
+        self.merged.drop('PESEL_PRZEDOSTATNIA', axis=1, inplace=True)
+
+
     def save_merged(self):
         self.merged.to_csv(f'{self.output_path}audiometry_{self.tonal_suffix}_genetic.csv', index=False, encoding='utf-8-sig')
 
