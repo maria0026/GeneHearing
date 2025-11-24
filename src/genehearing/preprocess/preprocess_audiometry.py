@@ -55,6 +55,7 @@ def main():
     tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hfPTA_columns)
 
     tonal_audiometry_processor.classificate_hearing_loss(config["biap_hearing_levels"], config["asha_hearing_levels"])
+    tonal_audiometry_processor.match_audiogram_type(config['audiogram_types_criteria_zone_1'])
 
     tonal_audiometry_processor.hearing_type_pta_and_bone_audiometry(config["pta_threshold"], config["bone_all_mean_columns"], config["bone_hf_all_mean_columns"])
     

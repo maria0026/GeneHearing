@@ -174,42 +174,55 @@ second_opt_columns:
 audiogram_types_criteria_zone_1:
   Wznoszacy:
     conditions:
-      - expr: "lfPTA_1 - hfPTA"
+      - columns: ["lfPTA_1", "hfPTA"]
+        operation: "diff"   
         operator: ">="
         value: 10
 
   Stromo_opadajacy:
     conditions:
-      - expr: "hfPTA - lfPTA_1"
+      - columns: ["hfPTA", "lfPTA_1"]
+        operation: "diff"
         operator: ">="
         value: 25
 
   Rownomiernie_opadajacy:
     conditions:
-      - expr: "hfPTA - lfPTA_1"
+      - columns: ["hfPTA", "lfPTA_1"]
+        operation: "diff"
         operator: ">="
         value: 10
-      - expr: "hfPTA - lfPTA_1"
+      - columns: ["hfPTA", "lfPTA_1"]
+        operation: "diff"
         operator: "<"
         value: 25
 
   U_ksztaltny:
     conditions:
-      - expr: "PTA2 - lfPTA_1"
+      - columns: ["PTA2", "lfPTA_1"]
+        operation: "diff"
         operator: ">="
         value: 15
-      - expr: "PTA2 - hfPTA"
+      - columns: ["PTA2", "hfPTA"]
         operator: ">="
         value: 15
 
   Plaski:
     conditions:
-      - expr: "lfPTA_1 - PTA2"
+      - columns: ["lfPTA_1", "PTA2"]
+        operation: "diff"
         operator: "abs<="
         value: 10
-      - expr: "PTA2 - hfPTA"
+      - columns: ["PTA2", "hfPTA"]
+        operation: "diff"
         operator: "abs<="
         value: 10
+        
+  Resztki_sluchowe:
+    conditions:
+      - column: "hfPTA"
+        operator: ">"
+        value: 120
 
 
 hearing_loss_criteria:

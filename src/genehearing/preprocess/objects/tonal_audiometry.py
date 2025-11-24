@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import numpy as np 
+import operator
 
 class TonalAudiometry():
     def __init__(self, 
@@ -421,9 +422,46 @@ class TonalAudiometry():
         print("Hearing loss calculation completed")
         
 
-    def classificate_audiogram_type(self):
-        return 0
- 
+    def check_condition_df(self, df, cond):
+        ops = {
+            ">=": operator.ge,
+            ">": operator.gt,
+            "<=": operator.le,
+            "<": operator.lt,
+        }
+        op = cond["operator"]
+        threshold = cond["value"]
+        
+        if "column" in cond:
+            series = df[cond["column"]]
+            return ops[op](series, threshold)
+        
+        col1, col2 = cond["columns"]
+        diff = df[col1] - df[col2]
+
+        if cond["operator"] == "abs<=":
+            return diff.abs() <= cond["value"]
+        else:
+            return ops[op](diff, threshold)
+
+
+    def match_audiogram_type(self, audiogram_types_criteria):
+        for i, mini_df in enumerate(self.mini_dfs):
+            ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
+            for key, group in ears_grouped.items():
+
+                for type_name, rule in audiogram_types_criteria.items():
+                    ok = True
+                    for cond in rule["conditions"]:
+                        mask = self.check_condition_df(group, cond).all()
+                        if not mask.any():
+                            ok = False
+                            break
+                    if ok:
+                        self.mini_dfs[i].loc[group.index, 'TYPE_ZONE_1'] =  type_name
+                        break
+
+        print("Audiogram types matched")
 
     def check_threshold(self, threshold, value):
         if value < threshold:

@@ -34,6 +34,8 @@ def main():
 
     genehearing_analyser.patients_dfs()
     genehearing_analyser.choose_first_examination()
+
+
     genehearing_analyser.create_dataframe_for_merging(config["datacalculationsdirectory"])
     genehearing_analyser.create_disinct_datasets(config['Datasets'], config["datacalculationsdirectory"])
     genehearing_analyser.save_processed_df(config["datacalculationsdirectory"])
