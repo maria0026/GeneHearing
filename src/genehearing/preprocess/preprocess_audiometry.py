@@ -44,13 +44,15 @@ def main():
 
     PTA2_columns = config["pta_columns"]["PTA2"]
     PTA4_columns = config["pta_columns"]["PTA4"]
+    lfPTA_columns_1 = config["pta_columns"]["lfPTA_1"]
+    lfPTA_columns_2 = config["pta_columns"]["lfPTA_2"]
     hfPTA_columns = config["pta_columns"]["hfPTA"]
 
     first_symmetry_columns = config["first_symmetry_columns"]
     second_symmetry_columns = config["second_symmetry_columns"]
 
     tonal_audiometry_processor.define_symmetry(first_symmetry_columns, second_symmetry_columns, config["threshold_def1"], config["threshold_def2"])
-    tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, hfPTA_columns)
+    tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hfPTA_columns)
 
     tonal_audiometry_processor.classificate_hearing_loss(config["biap_hearing_levels"], config["asha_hearing_levels"])
 

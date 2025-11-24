@@ -346,7 +346,7 @@ class TonalAudiometry():
 
 
 
-    def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, hf_columns):
+    def calculate_mean_ear_pta(self, PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hf_columns):
         numeric_cols = PTA2_columns + PTA4_columns + hf_columns
         text_cols = [col for col in self.data.columns if col not in numeric_cols]
         #valid_mini_dfs = [] 
@@ -369,29 +369,38 @@ class TonalAudiometry():
                     else:
                         df_source = group #else, it stays as 2 distinct rows
 
-                    pta2_mean, pta4_mean, ptahf_mean = self.calculate_pta(df_source, PTA2_columns, PTA4_columns, hf_columns) 
+                    pta2_mean, pta4_mean, ptalf_1_mean, ptalf_2_mean, ptahf_mean = self.calculate_pta(df_source, PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hf_columns) 
 
                     if sym == 1 and group.shape[0] == 2:
                         pta2_mean = pta2_mean.item() #because it returns series from two rows
                         pta4_mean = pta4_mean.item()
+                        ptalf_1_mean = ptalf_1_mean.item()
+                        ptalf_2_mean = ptalf_2_mean.item()
                         ptahf_mean = ptahf_mean.item()
 
                     group.loc[:, 'PTA2'] = pta2_mean #assign the values
                     group.loc[:, 'PTA4'] = pta4_mean
+                    group.loc[:, 'lfPTA_1'] = ptalf_1_mean
+                    group.loc[:, 'lfPTA_2'] = ptalf_2_mean
                     group.loc[:, 'hfPTA'] = ptahf_mean
+
                     self.mini_dfs[i]['PTA2'] = group['PTA2']
                     self.mini_dfs[i]['PTA4'] = group['PTA4']
+                    self.mini_dfs[i]['lfPTA_1'] = group['lfPTA_1']
+                    self.mini_dfs[i]['lfPTA_2'] = group['lfPTA_2']
                     self.mini_dfs[i]['hfPTA'] = group['hfPTA']
                     #valid_mini_dfs.append(mini_df)
         #self.mini_dfs = valid_mini_dfs
         print('PTA calculation completed.')
 
 
-    def calculate_pta(self, df, PTA2_columns, PTA4_columns, hf_columns):
+    def calculate_pta(self, df, PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hf_columns):
         pta2_mean = df[PTA2_columns].mean(axis=1, skipna=False).round(0)
         pta4_mean = df[PTA4_columns].mean(axis=1, skipna=False).round(0)
+        ptalf_1_mean = df[lfPTA_columns_1].mean(axis=1, skipna=False).round(0)
+        ptalf_2_mean = df[lfPTA_columns_2].mean(axis=1, skipna=False).round(0)
         ptahf_mean = df[hf_columns].mean(axis=1, skipna=False).round(0)
-        return pta2_mean, pta4_mean, ptahf_mean
+        return pta2_mean, pta4_mean, ptalf_1_mean, ptalf_2_mean, ptahf_mean
     
 
     def map_hearing_level(self, hearing_levels, value):
@@ -402,10 +411,19 @@ class TonalAudiometry():
 
     def classificate_hearing_loss(self, biap_hearing_levels, asha_hearing_levels):
         for i, mini_df in enumerate(self.mini_dfs):
+            mini_df["BIAP_PTA2"] = mini_df['PTA2'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
             mini_df["BIAP"] = mini_df['PTA4'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
             mini_df["ASHA"] = mini_df['PTA4'].apply(lambda x: self.map_hearing_level(asha_hearing_levels, x))
-        print("Hearing loss calculation completed")
+            mini_df["BIAP_lfPTA_1"] = mini_df['lfPTA_1'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
+            mini_df["BIAP_lfPTA_2"] = mini_df['lfPTA_2'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
+            mini_df["BIAP_hfPTA"] = mini_df['hfPTA'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
 
+        print("Hearing loss calculation completed")
+        
+
+    def classificate_audiogram_type(self):
+        return 0
+ 
 
     def check_threshold(self, threshold, value):
         if value < threshold:
