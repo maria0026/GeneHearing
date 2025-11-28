@@ -225,6 +225,60 @@ audiogram_types_criteria_zone_1:
         value: 120
 
 
+audiogram_types_criteria_zone_2:
+  Wznoszacy:
+    conditions:
+      - columns: ["lfPTA_2", "hfPTA"]
+        operation: "diff"   
+        operator: ">="
+        value: 10
+
+  Stromo_opadajacy:
+    conditions:
+      - columns: ["hfPTA", "lfPTA_2"]
+        operation: "diff"
+        operator: ">="
+        value: 25
+
+  Rownomiernie_opadajacy:
+    conditions:
+      - columns: ["hfPTA", "lfPTA_2"]
+        operation: "diff"
+        operator: ">="
+        value: 10
+      - columns: ["hfPTA", "lfPTA_2"]
+        operation: "diff"
+        operator: "<"
+        value: 25
+
+  U_ksztaltny:
+    conditions:
+      - columns: ["PTA4", "lfPTA_2"]
+        operation: "diff"
+        operator: ">="
+        value: 15
+      - columns: ["PTA4", "hfPTA"]
+        operator: ">="
+        value: 15
+
+  Plaski:
+    conditions:
+      - columns: ["lfPTA_2", "PTA4"]
+        operation: "diff"
+        operator: "abs<="
+        value: 10
+      - columns: ["PTA4", "hfPTA"]
+        operation: "diff"
+        operator: "abs<="
+        value: 10
+        
+  Resztki_sluchowe:
+    conditions:
+      - column: "hfPTA"
+        operator: ">"
+        value: 120
+
+
 hearing_loss_criteria:
   Sluch_prawidlowy:
     air:

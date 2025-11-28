@@ -16,7 +16,16 @@ class TonalAudiometry():
         
 
         self.patient_number_columnname = columnnames['patient_number_columnname']
-        self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding='utf-8-sig')
+        encodings_to_try = ["utf-8", "utf-8-sig", "cp1250", "latin1"]
+
+        for enc in encodings_to_try:
+            try:
+                self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding=enc)
+                print(f"Wczytano poprawnie z encoding='{enc}'")
+                break
+            except UnicodeDecodeError:
+                print(f"Nieudane wczytanie przy encoding='{enc}'")
+        
         print("Before dropping duplicates", self.data.shape)
         self.data.columns = self.data.columns.str.upper()
         self.data = self.data.drop_duplicates()
@@ -445,23 +454,34 @@ class TonalAudiometry():
             return ops[op](diff, threshold)
 
 
-    def match_audiogram_type(self, audiogram_types_criteria):
-        for i, mini_df in enumerate(self.mini_dfs):
-            ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
-            for key, group in ears_grouped.items():
-
-                for type_name, rule in audiogram_types_criteria.items():
+    def search_through_criteria(self, group, audiogram_types_criteria):
+        for type_name, rule in audiogram_types_criteria.items():
                     ok = True
                     for cond in rule["conditions"]:
-                        mask = self.check_condition_df(group, cond).all()
+                        mask = self.check_condition_df(group, cond)
                         if not mask.any():
                             ok = False
                             break
                     if ok:
-                        self.mini_dfs[i].loc[group.index, 'TYPE_ZONE_1'] =  type_name
-                        break
+                        return type_name
+                    
+        return "brak_typu"
 
+
+    def match_audiogram_type(self, audiogram_types_criteria, audiogram_types_criteria_2):
+        for i, mini_df in enumerate(self.mini_dfs):
+            ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
+            for key, group in ears_grouped.items():
+                audiometry_type_grouped = {g: d for g, d in group.groupby("GROUP")}
+                air_df = audiometry_type_grouped.get('air')
+                if air_df is None:
+                    continue
+                type_name1 = self.search_through_criteria(air_df, audiogram_types_criteria)
+                type_name2 = self.search_through_criteria(air_df, audiogram_types_criteria_2)
+                self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_1'] =  type_name1
+                self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_2'] =  type_name2
         print("Audiogram types matched")
+
 
     def check_threshold(self, threshold, value):
         if value < threshold:
