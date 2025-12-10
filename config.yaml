@@ -186,6 +186,12 @@ second_opt_columns:
   - "WYNIK_X_4000"
 
 audiogram_types_criteria_zone_1:
+  Resztki_sluchowe:
+    conditions:
+      - column: "hfPTA"
+        operator: ">"
+        value: 120
+        
   Wznoszacy:
     conditions:
       - columns: ["lfPTA_1", "hfPTA"]
@@ -232,14 +238,15 @@ audiogram_types_criteria_zone_1:
         operator: "abs<="
         value: 10
         
+
+
+audiogram_types_criteria_zone_2:
   Resztki_sluchowe:
     conditions:
       - column: "hfPTA"
         operator: ">"
         value: 120
 
-
-audiogram_types_criteria_zone_2:
   Wznoszacy:
     conditions:
       - columns: ["lfPTA_2", "hfPTA"]
@@ -286,11 +293,7 @@ audiogram_types_criteria_zone_2:
         operator: "abs<="
         value: 10
         
-  Resztki_sluchowe:
-    conditions:
-      - column: "hfPTA"
-        operator: ">"
-        value: 120
+
 
 
 hearing_loss_criteria:
