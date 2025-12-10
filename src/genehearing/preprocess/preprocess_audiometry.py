@@ -48,11 +48,16 @@ def main():
     lfPTA_columns_2 = config["pta_columns"]["lfPTA_2"]
     hfPTA_columns = config["pta_columns"]["hfPTA"]
 
+    lf_zone_PTA_columns = config["pta_columns"]["lfzone"]
+    mf_zone_PTA_columns = config["pta_columns"]["mfzone"]
+    hf_zone_PTA_columns = config["pta_columns"]["hfzone"]
+
     first_symmetry_columns = config["first_symmetry_columns"]
     second_symmetry_columns = config["second_symmetry_columns"]
 
     tonal_audiometry_processor.define_symmetry(first_symmetry_columns, second_symmetry_columns, config["threshold_def1"], config["threshold_def2"])
-    tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hfPTA_columns)
+    tonal_audiometry_processor.calculate_mean_ear_pta(PTA2_columns, PTA4_columns, lfPTA_columns_1, lfPTA_columns_2, hfPTA_columns, lf_zone_PTA_columns,
+                                                      mf_zone_PTA_columns, hf_zone_PTA_columns)
 
     tonal_audiometry_processor.classificate_hearing_loss(config["biap_hearing_levels"], config["asha_hearing_levels"])
     tonal_audiometry_processor.match_audiogram_type(config['audiogram_types_criteria_zone_1'], config['audiogram_types_criteria_zone_2'])
