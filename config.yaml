@@ -293,8 +293,95 @@ audiogram_types_criteria_zone_2:
         operator: "abs<="
         value: 10
         
+audiogram_types_criteria_zones:
+  Resztki_sluchowe:
+    condition_and:
+      - column: "hfPTA"
+        operator: ">"
+        value: 120
+
+  Wznoszacy:
+    condition_or: 
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: "<"
+
+    condition_and:
+      - columns: ["lf_zone_PTA", "hf_zone_PTA"] 
+        operator: ">="
+        value: 10
+
+  Rownomiernie_opadajacy:
+    condition_or: 
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: "<"
+    condition_and:
+      - columns: ["hf_zone_PTA", "lf_zone_PTA"]
+        operator: ">="
+        value: 10
+      - columns: ["hf_zone_PTA", "lf_zone_PTA"]
+        operator: "<"
+        value: 25
+
+  Stromo_opadajacy:
+    condition_or: 
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: "<"
+    condition_and:
+      - columns: ["hf_zone_PTA", "lf_zone_PTA"]
+        operator: ">="
+        value: 25
 
 
+  U_ksztaltny:
+    condition_or: 
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: "<"
+    condition_and:
+      - columns: ["mf_zone_PTA", "hf_zone_PTA"]
+        operator: ">="
+        value: 10
+      - columns: ["mf_zone_PTA", "lf_zone_PTA"]
+        operator: ">="
+        value: 10
+      - columns: ["lf_zone_PTA", "hf_zone_PTA"]
+        operator: "abs<="
+        value: 10
+
+  Plaski:
+    condition_or: 
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: "<"
+    condition_and:
+      - columns: ["mf_zone_PTA", "lf_zone_PTA"]
+        operator: "abs<"
+        value: 10
+      - columns: ["mf_zone_PTA", "hf_zone_PTA"]
+        operator: "abs<"
+        value: 10    
+      - columns: ["lf_zone_PTA", "hf_zone_PTA"]
+        operator: "abs<="
+        value: 10
+
+  N_ksztaltny:
+    condition_or: 
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: "<"
+    condition_and:
+      - columns: ["mf_zone_PTA", "lf_zone_PTA"]
+        operator: "<="
+        value: -10
+      - columns: ["mf_zone_PTA", "hf_zone_PTA"]
+        operator: "<="
+        value: -10    
+      - columns: ["lf_zone_PTA", "hf_zone_PTA"]
+        operator: "abs<="
+        value: 10
 
 hearing_loss_criteria:
   Sluch_prawidlowy:

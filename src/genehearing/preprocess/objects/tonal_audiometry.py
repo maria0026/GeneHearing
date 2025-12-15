@@ -429,45 +429,72 @@ class TonalAudiometry():
 
         print("Hearing loss calculation completed")
         
-
-    def check_condition_df(self, df, cond):
+    def return_operator(self, op_str):
         ops = {
             ">=": operator.ge,
             ">": operator.gt,
             "<=": operator.le,
             "<": operator.lt,
+            "abs<": lambda x, y: abs(x) < y,
+            "abs>": lambda x, y: abs(x) > y,
+            "abs<=": lambda x, y: abs(x) <= y,
+            "abs>=": lambda x, y: abs(x) >= y,
         }
+        return ops[op_str]
+
+
+    def check_condition_df(self, df, cond):
+
         op = cond["operator"]
         threshold = cond["value"]
         
         if "column" in cond:
             series = df[cond["column"]]
-            return ops[op](series, threshold)
-        
+            return self.return_operator(op)(series, threshold)
+
         col1, col2 = cond["columns"]
         diff = df[col1] - df[col2]
-
-        if cond["operator"] == "abs<=":
-            return diff.abs() <= cond["value"]
-        else:
-            return ops[op](diff, threshold)
+        return self.return_operator(op)(diff, threshold)
 
 
     def search_through_criteria(self, group, audiogram_types_criteria):
         for type_name, rule in audiogram_types_criteria.items():
-                    ok = True
-                    for cond in rule["conditions"]:
-                        mask = self.check_condition_df(group, cond)
-                        if not mask.any():
-                            ok = False
-                            break
-                    if ok:
-                        return type_name
+            ok = True
+            for cond in rule["conditions"]:
+                mask = self.check_condition_df(group, cond)
+                if not mask.any():
+                    ok = False
+                    break
+            if ok:
+                return type_name
                     
         return "brak_typu"
 
 
-    def match_audiogram_type(self, audiogram_types_criteria, audiogram_types_criteria_2):
+    def search_through_criteria_zones(self, group, audiogram_types_criteria):
+        for type_name, rule in audiogram_types_criteria.items():
+            ok = True
+            check_or = False
+            for cond in rule["condition_and"]:
+                mask = self.check_condition_df(group, cond)
+                if not mask.all():
+                    ok = False
+                    break
+            if "condition_or" in rule:
+                for cond in rule["condition_or"]:
+                    for column, threshold in cond['columns'].items():
+                        operator = self.return_operator(cond['operator'])
+                        if operator(group[column].item(), threshold):
+                            check_or = True
+            else:
+                check_or = True
+
+            if (ok and check_or):
+                return type_name
+                    
+        return "brak_typu"
+
+    def match_audiogram_type(self, audiogram_types_criteria, audiogram_types_criteria_2, audiogram_types_criteria_zones):
         for i, mini_df in enumerate(self.mini_dfs):
             ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
             for key, group in ears_grouped.items():
@@ -477,8 +504,10 @@ class TonalAudiometry():
                     continue
                 type_name1 = self.search_through_criteria(air_df, audiogram_types_criteria)
                 type_name2 = self.search_through_criteria(air_df, audiogram_types_criteria_2)
+                type_name3 = self.search_through_criteria_zones(air_df, audiogram_types_criteria_zones)
                 self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_1'] =  type_name1
                 self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_2'] =  type_name2
+                self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONES'] =  type_name3
         print("Audiogram types matched")
 
 
@@ -528,16 +557,6 @@ class TonalAudiometry():
                 elif key == "vibro":
                     self.mini_dfs[i].loc[group.index, 'bone_mean_condition'] = 0
                     self.mini_dfs[i].loc[group.index, 'bone_mean_condition_hf'] = 0
-
-
-    def check_differences_opt1_zero(self, diff_df, value = 0, expected_length=4):
-        diff_df = diff_df.dropna(axis=1, how='all')
-        if (diff_df.shape[1]!=expected_length):
-            return 'brak_obl'
-        elif (diff_df.iloc[0]!=0).sum() == value:
-            return 1
-        else:
-            return 0
         
 
     def check_differences_opt1(self, diff_df, threshold=10, how_many=3, expected_length=4):

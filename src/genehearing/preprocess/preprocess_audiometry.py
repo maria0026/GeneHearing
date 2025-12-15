@@ -60,7 +60,8 @@ def main():
     tonal_audiometry_processor.calculate_mean_ear_pta(PTA_columns)
 
     tonal_audiometry_processor.classificate_hearing_loss(config["biap_hearing_levels"], config["asha_hearing_levels"])
-    tonal_audiometry_processor.match_audiogram_type(config['audiogram_types_criteria_zone_1'], config['audiogram_types_criteria_zone_2'])
+    tonal_audiometry_processor.match_audiogram_type(config['audiogram_types_criteria_zone_1'], config['audiogram_types_criteria_zone_2'],
+                                                    config['audiogram_types_criteria_zones'])
 
     tonal_audiometry_processor.hearing_type_pta_and_bone_audiometry(config["pta_threshold"], config["bone_all_mean_columns"], config["bone_hf_all_mean_columns"])
     
