@@ -295,10 +295,10 @@ audiogram_types_criteria_zone_2:
         
 audiogram_types_criteria_zones:
   Resztki_sluchowe:
-    condition_and:
-      - column: "hfPTA"
-        operator: ">"
-        value: 120
+    condition_and_columns:
+      - columns: {"WYNIK_X_125": 70, "WYNIK_X_250": 70,
+                "WYNIK_X_4000": 100, "WYNIK_X_8000": 100}
+        operator: ">="
 
   Wznoszacy:
     condition_or: 

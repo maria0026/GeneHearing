@@ -475,11 +475,19 @@ class TonalAudiometry():
         for type_name, rule in audiogram_types_criteria.items():
             ok = True
             check_or = False
-            for cond in rule["condition_and"]:
-                mask = self.check_condition_df(group, cond)
-                if not mask.all():
-                    ok = False
-                    break
+            if "condition_and" in rule:
+                for cond in rule["condition_and"]:
+                    mask = self.check_condition_df(group, cond)
+                    if not mask.all():
+                        ok = False
+                        break
+            if "condition_and_columns" in rule:
+                for cond in rule["condition_and_columns"]:
+                    for column, threshold in cond['columns'].items():
+                        operator = self.return_operator(cond['operator'])
+                        if not operator(group[column].item(), threshold):
+                            ok = False
+                            break
             if "condition_or" in rule:
                 for cond in rule["condition_or"]:
                     for column, threshold in cond['columns'].items():
