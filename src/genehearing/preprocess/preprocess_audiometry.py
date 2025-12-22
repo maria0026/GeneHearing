@@ -65,7 +65,7 @@ def main():
 
     tonal_audiometry_processor.hearing_type_pta_and_bone_audiometry(config["pta_threshold"], config["bone_all_mean_columns"], config["bone_hf_all_mean_columns"])
     
-    tonal_audiometry_processor.hearing_type_differences_between_audiometries(config['first_opt_columns'], threshold=config['first_opt_threshold'], how_many_values=config['first_opt_how_many'])
+    tonal_audiometry_processor.hearing_type_differences_between_audiometries(config['reserve_columns'], threshold=config['reserve_threshold'], how_many_values=config['reserve_how_many'])
     tonal_audiometry_processor.classificate_hearing_loss_type(config["hearing_loss_criteria"])
 
 
