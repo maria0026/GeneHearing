@@ -163,9 +163,12 @@ class TonalAudiometry():
         print(f'Merging rows completed.')
 
 
+
     def create_air_audiometry(self, group, columns_to_fill):
         last_row = group.iloc[-1].copy()
-        last_row[columns_to_fill] = 125
+        for column in columns_to_fill.keys():
+            last_row[column] = columns_to_fill[column]
+        #last_row[columns_to_fill] = 125
         last_row[self.type_col] = 'Air'
         last_row["GROUP"] = 'air'
         return last_row
@@ -173,7 +176,7 @@ class TonalAudiometry():
 
     def find_last_existing_value(self, air_df, columns_to_fill):
         filled_last_idx = 0
-        for i, column in enumerate(columns_to_fill):
+        for i, column in enumerate(columns_to_fill.keys()):
             if air_df[column].notna().any():
                 filled = True
             else:
@@ -187,34 +190,43 @@ class TonalAudiometry():
 
 
     def fill_air_audiometry(self, air_df, columns_to_fill, filled_last_idx, vibro, filled_last_value=None, filling_limit=110):
-        filled_previous = False
-        filled = False
+
+        if (not vibro) and (filled_last_value < filling_limit): #if there is no vibro and last value is less than filling limit, do not fill
+                return air_df
+        
+        row_idx = air_df.index[0]
         fill = False
 
-        if (not vibro) and (filled_last_value < filling_limit):
-                return air_df
-        else:
-            for i, column in enumerate(columns_to_fill):
-                if air_df[column].notna().any():
-                    filled = True
+        for i, column in enumerate(columns_to_fill.keys()):
+            filled = pd.notna(air_df.at[row_idx, column])
+
+            if (not filled) and (i > filled_last_idx):
+                fill = True
+
+            if fill:
+                if columns_to_fill[column] == 'Nan':
+                    continue
                 else:
-                    filled = False
+                    air_df.at[row_idx, column] = columns_to_fill[column]
 
-                if (filled is False) and (filled_previous is True) and (i>filled_last_idx):
-                    air_df[column] = 125
-                    fill = True
-                    
-                elif fill:
-                    air_df[column] = 125
-
-                filled_previous = filled
-
-            return air_df
+        return air_df
 
 
-    def fill_ending_values(self, columns_to_fill, filling_limit):
+    def check_half_octave(self, df, half_octave_columns):
+        for column in half_octave_columns:
+            if column in df.columns and df[column].notna().any():
+                return True
+        return False
+
+    def fill_ending_values(self, columns_to_fill_standard, columns_to_fill_all, filling_limit, half_octave_columns):
         valid_mini_dfs = [] 
         for i, mini_df in enumerate(self.mini_dfs):
+            half_octave = self.check_half_octave(mini_df, half_octave_columns)
+            if half_octave:
+                columns_to_fill = columns_to_fill_all #if half octave, fill all columns
+            else:
+                columns_to_fill = columns_to_fill_standard #else, fill standard columns only
+
             ears_grouped = {g: d for g, d in mini_df.groupby("EAR_SIDE")}
             for key, group in ears_grouped.items():
                 audiometry_type_grouped = {g: d for g, d in group.groupby("GROUP")}
@@ -222,20 +234,20 @@ class TonalAudiometry():
                 air_df = audiometry_type_grouped.get('air')
                 vibro_df = audiometry_type_grouped.get('vibro')
 
-                if (air_df is None) and (vibro_df is not None):
-                    last_row = self.create_air_audiometry(group, columns_to_fill)
+                if (air_df is None) and (vibro_df is not None): #if there is no air audiometry but vibro exists, create air audiometry
+                    last_row = self.create_air_audiometry(group, columns_to_fill_all)
                     group = pd.concat([group, pd.DataFrame([last_row])], ignore_index=True)
                     
-                elif (bone_df is None) and (vibro_df is not None):
-                    filled_last_idx, _ = self.find_last_existing_value(air_df, columns_to_fill)
-                    air_df = self.fill_air_audiometry(air_df, columns_to_fill=columns_to_fill, filled_last_idx=filled_last_idx, vibro=True)
+                elif (bone_df is None) and (vibro_df is not None): #if there is no bone, but vibro exists, fill air audiometry
+                    filled_last_idx, _ = self.find_last_existing_value(air_df, columns_to_fill_all)
+                    air_df = self.fill_air_audiometry(air_df, columns_to_fill_standard, filled_last_idx, vibro=True)
                     group.loc[air_df.index, :] = air_df
                 elif (air_df is None):
                     group=None
                     continue
                 else:
-                    filled_last_idx, filled_last_value = self.find_last_existing_value(air_df, columns_to_fill)
-                    air_df = self.fill_air_audiometry(air_df, columns_to_fill=columns_to_fill, filled_last_idx=filled_last_idx, vibro=False, filled_last_value=filled_last_value, filling_limit=filling_limit)
+                    filled_last_idx, filled_last_value = self.find_last_existing_value(air_df, columns_to_fill_all) #fill, but check filling limit
+                    air_df = self.fill_air_audiometry(air_df, columns_to_fill, filled_last_idx, vibro=False, filled_last_value=filled_last_value, filling_limit=filling_limit)
                     group.loc[air_df.index, :] = air_df
 
                 ears_grouped[key] = group 

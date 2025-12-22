@@ -68,6 +68,40 @@ bone_audiometry: ["BoneMask", "Bone"]
 air_audiometry: ["AirMask", "Air"]
 vibro_audiometry: ['VibroMask', 'Vibro']
 
+
+columns_to_fill_standard:
+  WYNIK_X_125: 105
+  WYNIK_X_250: 115
+  WYNIK_X_500: 125
+  WYNIK_X_750: Nan
+  WYNIK_X_1000: 125
+  WYNIK_X_1500: Nan
+  WYNIK_X_2000: 125
+  WYNIK_X_3000: Nan
+  WYNIK_X_4000: Nan
+  WYNIK_X_4000: 125
+  WYNIK_X_6000: Nan
+  WYNIK_X_8000: 110
+
+columns_to_fill_all:
+  WYNIK_X_125: 105
+  WYNIK_X_250: 115
+  WYNIK_X_500: 125
+  WYNIK_X_750: 125
+  WYNIK_X_1000: 125
+  WYNIK_X_1500: 125
+  WYNIK_X_2000: 125
+  WYNIK_X_3000: 125
+  WYNIK_X_4000: 125
+  WYNIK_X_6000: 115
+  WYNIK_X_8000: 110
+
+halfoctave_columns:
+  - WYNIK_X_750
+  - WYNIK_X_1500
+  - WYNIK_X_3000
+  - WYNIK_X_6000
+
 columns_to_fill:
   - WYNIK_X_125
   - WYNIK_X_250
