@@ -372,7 +372,7 @@ class TonalAudiometry():
             for key, group in grouped.items():
                 if key == "air": #calculate only for air audiometry
                     sym = grouped["air"].iloc[0]['SYMETRIA'] #symmetry condition
-                    if sym == 1 and group.shape[0] == 2:
+                    if sym == 1 and group.shape[0] == 2: #if 2 ears and symmetric, calculate mean from both ears
                         df_source = pd.DataFrame({
                             **{col: [group[col].mean()] for col in numeric_cols},
                             **{col: [group[col].iloc[0]] for col in text_cols}
@@ -380,15 +380,20 @@ class TonalAudiometry():
                     else:
                         df_source = group #else, it stays as 2 distinct rows
 
-                    results = self.calculate_pta(df_source, PTA_columns)
+                    results = self.calculate_pta(group, PTA_columns)
+                    #symmetry
+                    results_sym = self.calculate_pta(df_source, PTA_columns)
 
                     if sym == 1 and group.shape[0] == 2:
-                        for key_res in results:
-                            results[key_res] = results[key_res].item()  #because it returns series from one row
+                        for key_res in results_sym:
+                            results_sym[key_res] = results_sym[key_res].item()  #because it returns series from one row
 
-                    for key_res in results:
+                    for key_res in results_sym:
                         group.loc[: , key_res] = results[key_res]
+                        group.loc[:, key_res + '_mean_ear'] = results_sym[key_res]
+                        
                         self.mini_dfs[i][key_res] = group[key_res]
+                        self.mini_dfs[i][key_res + '_mean_ear'] = group[key_res + '_mean_ear']
 
                     #valid_mini_dfs.append(mini_df)
         #self.mini_dfs = valid_mini_dfs
@@ -411,6 +416,7 @@ class TonalAudiometry():
                 result = self.mean_no_nan(df, PTA_columns[key])
             results[key] = result
         return results
+    
 
     def map_hearing_level(self, hearing_levels, value):
         for level in hearing_levels:
@@ -418,17 +424,15 @@ class TonalAudiometry():
                 return level["label"]
 
 
-    def classificate_hearing_loss(self, biap_hearing_levels, asha_hearing_levels):
+    def classificate_hearing_loss(self, PTA_columns, biap_hearing_levels, asha_hearing_levels):
         for i, mini_df in enumerate(self.mini_dfs):
-            mini_df["BIAP_PTA2"] = mini_df['PTA2'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
-            mini_df["BIAP"] = mini_df['PTA4'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
-            mini_df["ASHA"] = mini_df['PTA4'].apply(lambda x: self.map_hearing_level(asha_hearing_levels, x))
-            mini_df["BIAP_lfPTA_1"] = mini_df['lfPTA_1'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
-            mini_df["BIAP_lfPTA_2"] = mini_df['lfPTA_2'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
-            mini_df["BIAP_hfPTA"] = mini_df['hfPTA'].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
+            for pta_col in PTA_columns.keys():
+                mini_df["BIAP_"+pta_col] = mini_df[pta_col].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
+                mini_df["BIAP_"+pta_col+"_mean_ear"] = mini_df[pta_col+"_mean_ear"].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
 
         print("Hearing loss calculation completed")
-        
+
+
     def return_operator(self, op_str):
         ops = {
             ">=": operator.ge,
@@ -475,6 +479,7 @@ class TonalAudiometry():
         for type_name, rule in audiogram_types_criteria.items():
             ok = True
             check_or = False
+            check_or_and = False
             if "condition_and" in rule:
                 for cond in rule["condition_and"]:
                     mask = self.check_condition_df(group, cond)
@@ -485,11 +490,11 @@ class TonalAudiometry():
                 for cond in rule["condition_and_columns"]:
                     for column, threshold in cond['columns'].items():
                         operator = self.return_operator(cond['operator'])
-                        if not operator(group[column].item(), threshold):
+                        if not (operator(group[column].item(), threshold) or group[column].isna().all()):
                             ok = False
                             break
-            if "condition_or" in rule:
-                for cond in rule["condition_or"]:
+            if "condition_or_columns" in rule:
+                for cond in rule["condition_or_columns"]:
                     for column, threshold in cond['columns'].items():
                         operator = self.return_operator(cond['operator'])
                         if operator(group[column].item(), threshold):
@@ -497,7 +502,19 @@ class TonalAudiometry():
             else:
                 check_or = True
 
-            if (ok and check_or):
+            if "condition_or_and" in rule:
+                for group_cond in rule["condition_or_and"]:
+                    for cond in group_cond["conditions"]:
+                        mask = self.check_condition_df(group, cond)
+                        if mask.any():
+                            check_or_and = True
+                        else:
+                            check_or_and = False
+                            break
+            else:
+                check_or_and = True
+
+            if (ok and check_or and check_or_and):
                 return type_name
                     
         return "brak_typu"
@@ -527,8 +544,8 @@ class TonalAudiometry():
         
 
     def hearing_loss_type_cond1(self, df, threshold):
-        df["PTA4_condition"] = df['PTA4'].apply(lambda x: self.check_threshold(threshold, x))
-        df["hfPTA_condition"] = df['hfPTA'].apply(lambda x: self.check_threshold(threshold, x))
+        df["PTA4_condition"] = df['PTA4_mean_ear'].apply(lambda x: self.check_threshold(threshold, x))
+        df["hfPTA_condition"] = df['hfPTA_mean_ear'].apply(lambda x: self.check_threshold(threshold, x))
         return df
     
 
@@ -664,7 +681,13 @@ class TonalAudiometry():
                     if match:
                         #przypisanie typu ubytku do wszystkich wierszy tego ucha
                         indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index
-                        self.mini_dfs[i].loc[indices, 'hearing_type'] = loss_type
+
+                        if loss_type.endswith(('_1', '_2', '_3', '_4')):
+                            clean_loss_type = loss_type[:-2]
+                        else:
+                            clean_loss_type = loss_type
+
+                        self.mini_dfs[i].loc[indices, 'hearing_type'] = clean_loss_type
                         ear_assigned = True
                         break  #jeśli dopasowano typ, nie sprawdzaj innych
 
