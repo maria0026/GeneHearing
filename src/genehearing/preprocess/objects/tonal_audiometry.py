@@ -21,15 +21,18 @@ class TonalAudiometry():
         for enc in encodings_to_try:
             try:
                 self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding=enc)
+
                 print(f"Wczytano poprawnie z encoding='{enc}'")
                 break
             except UnicodeDecodeError:
                 print(f"Nieudane wczytanie przy encoding='{enc}'")
-        
+
         print("Before dropping duplicates", self.data.shape)
         self.data.columns = self.data.columns.str.upper()
         self.data = self.data.drop_duplicates()
         print("After dropping duplicates", self.data.shape)
+
+        #self.data = self.data[self.data[self.patient_number_columnname]=='120833/2010']
 
         self.earside_col = columnnames['audiometry_earside_columnname']
         self.date_column = columnnames['date_column']
@@ -167,7 +170,10 @@ class TonalAudiometry():
     def create_air_audiometry(self, group, columns_to_fill):
         last_row = group.iloc[-1].copy()
         for column in columns_to_fill.keys():
-            last_row[column] = columns_to_fill[column]
+            if columns_to_fill[column] == 'Nan':
+                continue
+            else:
+                last_row[column] = columns_to_fill[column]
         #last_row[columns_to_fill] = 125
         last_row[self.type_col] = 'Air'
         last_row["GROUP"] = 'air'
@@ -218,6 +224,7 @@ class TonalAudiometry():
                 return True
         return False
 
+
     def fill_ending_values(self, columns_to_fill_standard, columns_to_fill_all, filling_limit, half_octave_columns):
         valid_mini_dfs = [] 
         for i, mini_df in enumerate(self.mini_dfs):
@@ -235,7 +242,7 @@ class TonalAudiometry():
                 vibro_df = audiometry_type_grouped.get('vibro')
 
                 if (air_df is None) and (vibro_df is not None): #if there is no air audiometry but vibro exists, create air audiometry
-                    last_row = self.create_air_audiometry(group, columns_to_fill_all)
+                    last_row = self.create_air_audiometry(group, columns_to_fill)
                     group = pd.concat([group, pd.DataFrame([last_row])], ignore_index=True)
                     
                 elif (bone_df is None) and (vibro_df is not None): #if there is no bone, but vibro exists, fill air audiometry
@@ -489,6 +496,7 @@ class TonalAudiometry():
 
     def search_through_criteria_zones(self, group, audiogram_types_criteria):
         for type_name, rule in audiogram_types_criteria.items():
+            #print(type_name)
             ok = True
             check_or = False
             check_or_and = False
@@ -511,22 +519,26 @@ class TonalAudiometry():
                         operator = self.return_operator(cond['operator'])
                         if operator(group[column].item(), threshold):
                             check_or = True
+                            break         
             else:
                 check_or = True
 
             if "condition_or_and" in rule:
                 for group_cond in rule["condition_or_and"]:
+                    check_or_and = False
+                    #print('group_cond', group_cond)
                     for cond in group_cond["conditions"]:
+                        #print('cond', cond)
                         mask = self.check_condition_df(group, cond)
                         if mask.any():
                             check_or_and = True
-                        else:
-                            check_or_and = False
-                            break
+                    if not check_or_and:
+                        break
             else:
                 check_or_and = True
 
             if (ok and check_or and check_or_and):
+                #print(type_name, 'pasuje')
                 return type_name
                     
         return "brak_typu"
@@ -539,11 +551,11 @@ class TonalAudiometry():
                 air_df = audiometry_type_grouped.get('air')
                 if air_df is None:
                     continue
-                type_name1 = self.search_through_criteria(air_df, audiogram_types_criteria)
-                type_name2 = self.search_through_criteria(air_df, audiogram_types_criteria_2)
+                #type_name1 = self.search_through_criteria(air_df, audiogram_types_criteria)
+                #type_name2 = self.search_through_criteria(air_df, audiogram_types_criteria_2)
                 type_name3 = self.search_through_criteria_zones(air_df, audiogram_types_criteria_zones)
-                self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_1'] =  type_name1
-                self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_2'] =  type_name2
+                #self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_1'] =  type_name1
+                #self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONE_2'] =  type_name2
                 self.mini_dfs[i].loc[air_df.index, 'TYPE_ZONES'] =  type_name3
         print("Audiogram types matched")
 
