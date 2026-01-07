@@ -434,13 +434,20 @@ hearing_loss_criteria:
   Sluch_prawidlowy:
     air:
       PTA4_condition: 1
-      REZERWA: 0
+      hfPTA_condition: 1
     bone:
       bone_mean_condition: 1
 
-  Niedosluch_przewodzeniowy:
+  Niedosluch_przewodzeniowy_1:
     air:
       PTA4_condition: 0
+      REZERWA: 1
+    bone:
+      bone_mean_condition: 1
+
+  Niedosluch_przewodzeniowy_2:
+    air:
+      hfPTA_condition: 0
       REZERWA: 1
     bone:
       bone_mean_condition: 1
@@ -449,33 +456,32 @@ hearing_loss_criteria:
     air:
       PTA4_condition: 0
       REZERWA: 0
-    bone:
-      bone_mean_condition: 0
 
   Niedosluch_odbiorczy_2:
     air:
       hfPTA_condition: 0
       REZERWA: 0
-    bone:
-      bone_mean_condition_hf: 0
     
   Niedosluch_odbiorczy_3:
-    air:
-      PTA4_condition: 0
-      REZERWA: 0
     vibro:
-      bone_mean_condition: 0
+      vibro: 1 
+      bone: 0 
 
   Niedosluch_odbiorczy_4:
-    air:
-      hfPTA_condition: 0
-      REZERWA: 0
     vibro:
-      bone_mean_condition_hf: 0
+      vibro: 1
+      bone: 0
 
-  Niedosluch_mieszany:
+  Niedosluch_mieszany_1:
     air:
       PTA4_condition: 0
+      REZERWA: 1
+    bone:
+      bone_mean_condition: 0
+  
+  Niedosluch_mieszany_2:
+    air:
+      hfPTA_condition: 0
       REZERWA: 1
     bone:
       bone_mean_condition: 0

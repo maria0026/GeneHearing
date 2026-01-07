@@ -197,8 +197,8 @@ class TonalAudiometry():
 
     def fill_air_audiometry(self, air_df, columns_to_fill, filled_last_idx, vibro, filled_last_value=None, filling_limit=110):
 
-        if (not vibro) and (filled_last_value < filling_limit): #if there is no vibro and last value is less than filling limit, do not fill
-                return air_df
+        if filled_last_value < filling_limit: #if there is no vibro and last value is less than filling limit, do not fill
+            return air_df
         
         row_idx = air_df.index[0]
         fill = False
@@ -245,9 +245,9 @@ class TonalAudiometry():
                     last_row = self.create_air_audiometry(group, columns_to_fill)
                     group = pd.concat([group, pd.DataFrame([last_row])], ignore_index=True)
                     
-                elif (bone_df is None) and (vibro_df is not None): #if there is no bone, but vibro exists, fill air audiometry
-                    filled_last_idx, _ = self.find_last_existing_value(air_df, columns_to_fill_all)
-                    air_df = self.fill_air_audiometry(air_df, columns_to_fill_standard, filled_last_idx, vibro=True)
+                elif (air_df is not None) and ((bone_df is not None) or (vibro_df is not None)): #if there is no bone, but vibro exists, fill air audiometry
+                    filled_last_idx, filled_last_value = self.find_last_existing_value(air_df, columns_to_fill_all) #fill, but check filling limit
+                    air_df = self.fill_air_audiometry(air_df, columns_to_fill, filled_last_idx, vibro=False, filled_last_value=filled_last_value, filling_limit=filling_limit)
                     group.loc[air_df.index, :] = air_df
                 elif (air_df is None):
                     group=None
@@ -350,6 +350,7 @@ class TonalAudiometry():
 
 
     def define_symmetry(self, first_symmetry_columns, second_symmetry_columns, threshold_def1, threshold_def2, suffix="_diff"):
+        self.all_columns = first_symmetry_columns
         for i, mini_df in enumerate(self.mini_dfs):
             grouped = {g: d for g, d in mini_df.groupby("GROUP")}
             for key in grouped:
@@ -653,6 +654,18 @@ class TonalAudiometry():
                 col1 = pd.to_numeric(group[f'first_option_{threshold}_diff'], errors='coerce')
                 col2 = pd.to_numeric(group['15_diff'], errors='coerce')
 
+                if vibro_df is not None:
+                    self.mini_dfs[i].loc[group.index, 'vibro'] = 1
+                else:
+                    self.mini_dfs[i].loc[group.index, 'vibro'] = 0
+
+                num_values = bone_df.loc[bone_df.index[0], self.all_columns].count() if bone_df is not None else 0
+                #if there is no values in bone audiometry or only one value
+                if (bone_df is None) or (num_values <= 1):
+                    self.mini_dfs[i].loc[group.index, 'bone'] = 0
+                else:
+                    self.mini_dfs[i].loc[group.index, 'bone'] = 1
+
                 rezerwa = np.where(
                     col1.eq(1) | col2.eq(1), 1,    #jeśli którakolwiek kolumna ma 1 → 1
                     np.where(
@@ -680,6 +693,17 @@ class TonalAudiometry():
                 continue
 
             for ear in self.ears:
+                #ear_indices = grouped[grouped['EAR_SIDE'] == ear].index
+                #air_indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index
+                ear_indices = mini_df[mini_df['EAR_SIDE'] == ear].index
+                air_indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index
+
+                ear_group = mini_df.loc[ear_indices, :]
+
+                if ear_group.shape[0] < 2:
+                    self.mini_dfs[i].loc[ear_indices, 'hearing_type'] = "nie okreslono"
+                    continue
+
                 ear_assigned = False
                 for loss_type, rules in criteria.items():
                     match = True
@@ -705,20 +729,20 @@ class TonalAudiometry():
                     if match:
                         #przypisanie typu ubytku do wszystkich wierszy tego ucha
                         indices = grouped['air'][grouped['air']['EAR_SIDE'] == ear].index
-
                         if loss_type.endswith(('_1', '_2', '_3', '_4')):
                             clean_loss_type = loss_type[:-2]
                         else:
                             clean_loss_type = loss_type
 
-                        self.mini_dfs[i].loc[indices, 'hearing_type'] = clean_loss_type
+                        self.mini_dfs[i].loc[air_indices, 'hearing_type'] = clean_loss_type
                         ear_assigned = True
                         break  #jeśli dopasowano typ, nie sprawdzaj innych
 
                 if not ear_assigned:
-                    #jeśli żaden typ nie pasuje, oznaczamy jako "nie określono"
+                    #jeśli żaden typ nie pasuje, oznaczamy jako "zaden typ nie pasuje"
                     indices = mini_df[mini_df['EAR_SIDE'] == ear].index
-                    self.mini_dfs[i].loc[indices, 'hearing_type'] = "zaden typ nie pasuje"
+                    self.mini_dfs[i].loc[air_indices, 'hearing_type'] = "zaden typ nie pasuje"
+
 
 
     def save_processed_df(self, output_path):
