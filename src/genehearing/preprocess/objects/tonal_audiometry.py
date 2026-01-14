@@ -16,14 +16,13 @@ class TonalAudiometry():
         
 
         self.patient_number_columnname = columnnames['patient_number_columnname']
-        encodings_to_try = ["utf-8", "utf-8-sig", "cp1250", "latin1"]
+        encodings_to_try = ["utf-8", "utf-8-sig", "cp1250"]
 
         for enc in encodings_to_try:
             try:
                 self.data = pd.read_csv(path, sep=None, engine='python', dtype={self.patient_number_columnname: str}, encoding=enc)
-
                 print(f"Wczytano poprawnie z encoding='{enc}'")
-                break
+                #break
             except UnicodeDecodeError:
                 print(f"Nieudane wczytanie przy encoding='{enc}'")
 
@@ -38,6 +37,7 @@ class TonalAudiometry():
         self.date_column = columnnames['date_column']
         self.type_col = columnnames['type_column']
         self.description_col = columnnames['description_column']
+        self.pat_id_col = columnnames['patient_id_columnname']
 
         self.tonal_suffix = tonal_suffix
         self.air_audiometry = air_audiometry
@@ -55,10 +55,14 @@ class TonalAudiometry():
 
 
     def merge_implants(self):
+        print(self.data.columns)
         implanty = pd.read_csv(self.path_implants, sep=None, engine='python', dtype={self.genetic_patient_id_column: str}, encoding='cp1250')
         implanty.columns = implanty.columns.str.upper()
-        
+        #reset index to avoid issues with merging
+        self.data.reset_index(drop=True, inplace=True)
+        self.data.columns = self.data.columns.str.strip().str.upper()
         self.data = pd.merge(self.data, implanty, how='left', on=self.genetic_patient_id_column)
+
 
 
     def filter_audiometry_type(self):
@@ -76,7 +80,10 @@ class TonalAudiometry():
         try:
             return pd.to_datetime(x, format="%d.%m.%Y %H:%M")
         except ValueError:
-            return pd.to_datetime(x, format="%Y-%m-%d %H:%M:%S")
+            try:
+                return pd.to_datetime(x, format="%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return pd.to_datetime(x, format="%m/%d/%Y %H:%M")
 
 
     def patients_dfs(self):

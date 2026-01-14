@@ -10,10 +10,12 @@ def main():
     implants_datapath = config["datarawdirectory"] + config['implants'] + '.csv'
 
 
+
     tonal_audiometry_processor = TonalAudiometry(tonal_audiometry_datapath, 
                                                  tonal_suffix, 
                                                  implants_datapath,
                                                  columnnames={'patient_number_columnname': config["patient_number_columnname"],
+                                                               'patient_id_columnname': config["patient_id_columnname"],
                                                                 'audiometry_earside_columnname': config['audiometry_earside_columnname'],
                                                                 'date_column': config['date_column'],
                                                                 'type_column': config['audiometry_type_columnname'],
@@ -33,6 +35,7 @@ def main():
                                                 vibro_audiometry=config['vibro_audiometry']
                                                  )
     tonal_audiometry_processor.merge_implants()
+
     tonal_audiometry_processor.filter_audiometry_type()
     tonal_audiometry_processor.patients_dfs()
     tonal_audiometry_processor.add_audiometry_group_and_ear_column()
