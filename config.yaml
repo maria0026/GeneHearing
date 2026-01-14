@@ -7,7 +7,8 @@ dataname: export_all_tables
 mri_dataname: mri
 genetic_name: genetic
 implants: implanty
-genetic_dataname_all: DFNB1_1614
+abr: ABR
+genetic_dataname_all: DFNB1_final_1620
 genetic_dataname: DFNB1_2025-10-10
 mapping: anon_mapping
 resultsdirectory: results/
@@ -50,6 +51,7 @@ audiometry_earside_columnname: "UWAGI_DO_AUDIOMETRII"
 audiometry_type_columnname: "TYP_AUDIOMETRII"
 patient_number_columnname: "NUMER_HISTORII_CHOROBY"
 pesel_columnname: "PESEL"
+patient_id_columnname: "ID_PACJENTA"
 
 #implants columns
 patient_identifier_columnname: "PATID"
