@@ -13,6 +13,7 @@ def main():
                                                 tonal_suffix, 
                                                 implants_datapath,
                                                 columnnames={'patient_number_columnname': config["patient_number_columnname"],
+                                                            'patient_id_columnname': config["patient_id_columnname"],
                                                             'audiometry_earside_columnname': config['audiometry_earside_columnname'],
                                                             'date_column': config['date_column'],
                                                             'type_column': config['audiometry_type_columnname'],
