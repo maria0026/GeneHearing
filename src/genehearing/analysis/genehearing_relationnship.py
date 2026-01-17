@@ -36,9 +36,10 @@ def main():
     genehearing_analyser.patients_dfs()
     genehearing_analyser.choose_first_examination()
 
-
-    genehearing_analyser.create_dataframe_for_merging(config["datacalculationsdirectory"])
-    genehearing_analyser.create_disinct_datasets(config['Datasets'], config["datacalculationsdirectory"])
+    biap_columns = ['BIAP_PTA4', 'BIAP_LF_ZONE_PTA', 'BIAP_MF_ZONE_PTA', 'BIAP_HF_ZONE_PTA']
+    genehearing_analyser.create_dataframe_for_merging(biap_columns, config["datacalculationsdirectory"])
+    biap_columns_sel = ['L_BIAP_HF_ZONE_PTA', 'P_BIAP_HF_ZONE_PTA']
+    genehearing_analyser.create_disinct_datasets(config['Datasets'], biap_columns_sel, config["datacalculationsdirectory"])
     genehearing_analyser.save_processed_df(config["datacalculationsdirectory"])
 
 
