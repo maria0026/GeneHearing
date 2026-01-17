@@ -152,33 +152,7 @@ pta_columns:
     - WYNIK_X_6000
     - WYNIK_X_8000
 
-abr_columns_to_fill:
-  - 0.5_UP
-  - 1_UP
-  - 2_UP
-  - 4_UP
-  - 2-4_UP
-  - 0.5_UL
-  - 1_UL
-  - 2_UL
-  - 4_UL
-  - 2-4_UL
 
-pta_abr_columns:
-  PTA2:
-    - 0.5_U
-    - 1_U
-    - 2_U
-  PTA4: 
-    - 0.5_U
-    - 1_U
-    - 2_U
-    - 4_U
-
-abr_optional_columns:
-- 2_U
-- 4_U
-abr_additional_column: "2-4_U"
 
 
 first_symmetry_columns:
@@ -522,3 +496,42 @@ Datasets:
   gleboki_znaczny:
     - "Gleboki"
     - "Znaczny"
+
+
+abr_columns_to_fill:
+  - 0.5_UP
+  - 1_UP
+  - 2_UP
+  - 4_UP
+  - 2-4_UP
+  - 0.5_UL
+  - 1_UL
+  - 2_UL
+  - 4_UL
+  - 2-4_UL
+
+pta_abr_columns:
+  PTA2:
+    - 0.5_U
+    - 1_U
+    - 2_U
+  PTA4: 
+    - 0.5_U
+    - 1_U
+    - 2_U
+    - 4_U
+
+abr_optional_columns:
+- 2_U
+- 4_U
+abr_additional_column: "2-4_U"
+
+abr_first_symmetry_columns:
+  - 0.5_U
+  - 1_U
+  - 2_U
+  - 4_U
+
+abr_second_symmetry_columns:
+  - 2_U
+  - 4_U
