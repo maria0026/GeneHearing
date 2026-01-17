@@ -30,6 +30,14 @@ def main():
                   }
     abr_analyser.calculate_PTA(PTA_columns)
 
+    first_symmetry_columns = config["abr_first_symmetry_columns"]
+    second_symmetry_columns = config["abr_second_symmetry_columns"]
+
+    abr_analyser.define_symmetry(first_symmetry_columns, second_symmetry_columns, config["threshold_def1"], config["threshold_def2"])
+    abr_analyser.define_sidedness()
+    abr_analyser.classificate_hearing_loss(PTA_columns, config["biap_hearing_levels"])
+    abr_analyser.save_to_csv()
+
     
     #merge genetic and abr, then concat audiometry tonal
 
