@@ -196,6 +196,15 @@ asha_hearing_levels:
   - { max: 90, label: "Znaczny" }
   - { max: 150, label: "Gleboki" }
 
+who_hearing_levels:
+  - { max: 19, label: "Prawidlowy" }
+  - { max: 34, label: "Lekki" }
+  - { max: 49, label: "Umiarkowany" }
+  - { max: 64, label: "Umiarkowanie_ciezki" }
+  - { max: 79, label: "Znaczny" }
+  - { max: 94, label: "Gleboki" }
+  - { max: 150, label: "Gluchota" }
+
 #hearing loss type
 pta_threshold: 20
 
