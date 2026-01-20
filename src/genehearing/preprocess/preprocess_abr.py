@@ -23,7 +23,6 @@ def main():
     
     abr_analyser.merge_genetic_abr()
     abr_analyser.map_no_response()
-    abr_analyser.replace_values()
 
     PTA_columns = {'PTA2': config["pta_abr_columns"]["PTA2"],
                     'PTA4': config["pta_abr_columns"]["PTA4"],
@@ -35,11 +34,9 @@ def main():
 
     abr_analyser.define_symmetry(first_symmetry_columns, second_symmetry_columns, config["threshold_def1"], config["threshold_def2"])
     abr_analyser.define_sidedness()
-    abr_analyser.classificate_hearing_loss(PTA_columns, config["biap_hearing_levels"])
+    abr_analyser.classificate_hearing_loss(PTA_columns, config["biap_hearing_levels"], config["asha_hearing_levels"], config["who_hearing_levels"])
     abr_analyser.save_to_csv()
 
-    
-    #merge genetic and abr, then concat audiometry tonal
 
 if __name__=="__main__":
     main()
