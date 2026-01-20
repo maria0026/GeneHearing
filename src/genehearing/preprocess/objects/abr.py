@@ -39,14 +39,16 @@ class AuditoryBrainstemResponse():
 
 
     def replace_values(self):
-        for idx, row in self.merged.iterrows():
+        df_copy=self.merged.copy()
+        for idx, row in df_copy.iterrows():
             for col in self.optional_columns:
                 for ear in self.ears:
                     #add ear suffix
                     column_ear = col + ear
                     if pd.isna(row[column_ear]):
                         row[column_ear] = row[self.additional_column + ear]
-            self.merged.loc[idx] = row
+            df_copy.loc[idx] = row
+        return df_copy
 
 
     def calculate_PTA(self, PTA_columns):
@@ -57,10 +59,16 @@ class AuditoryBrainstemResponse():
                 #add ear suffix
                 column_ear = [col + ear for col in columns]
                 mean_columns.extend(column_ear)
-                self.merged[pta_name + '_' + ear] = self.merged[column_ear].mean(axis=1).round(0)
-            self.merged[pta_name + '_MEAN'] = self.merged[mean_columns].mean(axis=1).round(0)
+                if pta_name =='PTA4':
+                    df_replaced = self.replace_values()
+                    self.merged[pta_name + '_' + ear] = df_replaced[column_ear].mean(axis=1, skipna=False).round(0)
+                else:
+                    self.merged[pta_name + '_' + ear] = self.merged[column_ear].mean(axis=1, skipna=False).round(0)
+            if pta_name =='PTA4':
+                self.merged[pta_name + '_MEAN'] = df_replaced[mean_columns].mean(axis=1, skipna=False).round(0)
+            else:
+                self.merged[pta_name + '_MEAN'] = self.merged[mean_columns].mean(axis=1, skipna=False).round(0)
 
-    
     def check_symmetry_def1(self, diff_df, threshold=20):
         diff_df = diff_df.dropna(axis=0, how='all')
         if diff_df.shape[0] < 2:
@@ -143,12 +151,16 @@ class AuditoryBrainstemResponse():
                 return level["label"]
             
 
-    def classificate_hearing_loss(self, PTA_columns, biap_hearing_levels):
+    def classificate_hearing_loss(self, PTA_columns, biap_hearing_levels, asha_hearing_levels=None, who_hearing_levels=None):
         for pta_col in PTA_columns.keys():
             #if 'symetria' value is 1
             self.merged.loc[self.merged['SYMETRIA'] == 1, "BIAP_"+pta_col+"_MEAN"] = self.merged[pta_col+"_MEAN"].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
+            self.merged.loc[self.merged['SYMETRIA'] == 1, "ASHA_"+pta_col+"_MEAN"] = self.merged[pta_col+"_MEAN"].apply(lambda x: self.map_hearing_level(asha_hearing_levels, x))
+            self.merged.loc[self.merged['SYMETRIA'] == 1, "WHO_"+pta_col+"_MEAN"] = self.merged[pta_col+"_MEAN"].apply(lambda x: self.map_hearing_level(who_hearing_levels, x))
             for ear in self.ears:
                 self.merged["BIAP_"+pta_col+"_"+ear] = self.merged[pta_col+"_"+ear].apply(lambda x: self.map_hearing_level(biap_hearing_levels, x))
+                self.merged["ASHA_"+pta_col+"_"+ear] = self.merged[pta_col+"_"+ear].apply(lambda x: self.map_hearing_level(asha_hearing_levels, x))
+                self.merged["WHO_"+pta_col+"_"+ear] = self.merged[pta_col+"_"+ear].apply(lambda x: self.map_hearing_level(who_hearing_levels, x))
 
 
     def save_to_csv(self):
