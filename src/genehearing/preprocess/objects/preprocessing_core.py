@@ -27,7 +27,7 @@ class CSVProcessor:
 
         
     def read_merge_genetic_audiometry(self):
-        self.merged = pd.merge(self.data_genetic, self.data_audiometry, how='left', on=self.match_column)
+        self.merged = pd.merge(self.data_genetic, self.data_audiometry, how='right', on=self.match_column)
         self.merged = self.merged.loc[:, ~self.merged.columns.str.contains('^Unnamed')]
 
     def merge_abr(self):
