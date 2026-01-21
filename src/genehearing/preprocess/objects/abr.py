@@ -41,17 +41,37 @@ class AuditoryBrainstemResponse():
     def replace_values(self):
         df_copy=self.merged.copy()
         for idx, row in df_copy.iterrows():
-            for col in self.optional_columns:
-                for ear in self.ears:
+            for ear in self.ears:
+                filled = False
+                for col in self.optional_columns:
+                    if (pd.isna(row[col + ear]) and filled):
+                        row[col + ear] = 'podstawione'
+                        break
                     #add ear suffix
                     column_ear = col + ear
                     if pd.isna(row[column_ear]):
                         row[column_ear] = row[self.additional_column + ear]
+                        filled = True
             df_copy.loc[idx] = row
         return df_copy
 
+    def conditional_mean(self, df, columns):
+        podstawione = df[columns].eq('podstawione')
+        #replace 'podstawione' with NaN and convert to numeric
+        numeric = df[columns].replace('podstawione', np.nan).apply(
+            pd.to_numeric, errors='coerce'
+        )
+
+        real_nans = numeric.isna() & ~podstawione #NaN które nie pochodzą z 'podstawione'
+
+        mean = numeric.mean(axis=1, skipna=True)
+        mean[real_nans.any(axis=1)] = np.nan  #te ktore mialy nan - wynik nan
+
+        return mean.round(0)
+
 
     def calculate_PTA(self, PTA_columns):
+        df_replaced = self.replace_values()
         for pta_name, columns in PTA_columns.items():
             mean_columns = []
             print(f"Calculating {pta_name} for columns: {columns}")
@@ -60,14 +80,14 @@ class AuditoryBrainstemResponse():
                 column_ear = [col + ear for col in columns]
                 mean_columns.extend(column_ear)
                 if pta_name =='PTA4':
-                    df_replaced = self.replace_values()
-                    self.merged[pta_name + '_' + ear] = df_replaced[column_ear].mean(axis=1, skipna=False).round(0)
+                    self.merged[pta_name + '_' + ear] = self.conditional_mean(df_replaced, column_ear)
                 else:
-                    self.merged[pta_name + '_' + ear] = self.merged[column_ear].mean(axis=1, skipna=False).round(0)
+                    self.merged[pta_name + '_' + ear] = self.conditional_mean(self.merged, column_ear)
             if pta_name =='PTA4':
-                self.merged[pta_name + '_MEAN'] = df_replaced[mean_columns].mean(axis=1, skipna=False).round(0)
+                self.merged[pta_name + '_MEAN'] = self.conditional_mean(df_replaced, mean_columns)
             else:
-                self.merged[pta_name + '_MEAN'] = self.merged[mean_columns].mean(axis=1, skipna=False).round(0)
+                self.merged[pta_name + '_MEAN'] = self.conditional_mean(self.merged, mean_columns)
+
 
     def check_symmetry_def1(self, diff_df, threshold=20):
         diff_df = diff_df.dropna(axis=0, how='all')
