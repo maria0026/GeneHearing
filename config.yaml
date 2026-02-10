@@ -8,7 +8,7 @@ mri_dataname: mri
 genetic_name: genetic
 implants: implanty
 abr: ABR
-genetic_dataname_all: DFNB1_final_1620
+genetic_dataname_all: DFNB1_final_1614
 genetic_dataname: DFNB1_2025-10-10
 mapping: anon_mapping
 resultsdirectory: results/
